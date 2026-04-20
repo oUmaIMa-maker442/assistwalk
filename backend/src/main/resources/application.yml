@@ -26,6 +26,7 @@ spring:
 
 server:
   port: 8081
+  address: 0.0.0.0
 
 jwt:
   secret: ${JWT_SECRET:dev-secret-insecure-change-in-prod}
