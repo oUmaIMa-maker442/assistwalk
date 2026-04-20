@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────────────────
+# AssistWalk — OCR micro-service
+# Installer avec : pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────
+
+# ── API ──────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+
+# ── OCR ──────────────────────────────────────────────────
+# Attention : easyocr tire torch/torchvision automatiquement.
+# Les versions ci-dessous sont verrouillées pour cohérence
+# avec les autres composants du projet AssistWalk.
+easyocr==1.7.2
+pytesseract==0.3.10
+
+# ── Vision ───────────────────────────────────────────────
+# opencv-python-headless : pas de dépendances GUI (Qt/GTK)
+# → obligatoire en environnement Docker sans affichage
+opencv-python-headless==4.9.0.80
+Pillow==10.2.0
+numpy==1.26.4
+
+# ── Deep learning (requis par easyocr) ───────────────────
+# CPU-only : remplace torch==2.3.0+cpu si l'image Docker
+# n'a pas de GPU (cas standard pour ce micro-service)
+torch==2.3.0
+torchvision==0.18.0
+
+# Note : ultralytics et streamlit sont intentionnellement
+# absents — ils appartiennent au projet principal (mobile/
+# navigation), pas à ce micro-service OCR.

@@ -13,10 +13,24 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-assistwalk_user} -d ${POSTGRES_DB:-assistwalk}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-assistwalk_user}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  ocr-service:
+    build:
+      context: ../ocr        # chemin relatif vers votre dossier ocr/
+      dockerfile: Dockerfile
+    container_name: assistwalk-ocr
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 10s
+      start_period: 60s      # laisse le temps à EasyOCR de charger
+      retries: 3
     restart: unless-stopped
 
 volumes:
