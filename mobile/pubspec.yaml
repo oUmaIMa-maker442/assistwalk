@@ -1,0 +1,55 @@
+name: assistwalk
+description: Application d'assistance à la mobilité
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI / Icons
+  cupertino_icons: ^1.0.8
+
+  # État
+  flutter_riverpod: ^2.5.1
+
+  # Requêtes HTTP
+  dio: ^5.4.3
+
+  # Sécurité token
+  flutter_secure_storage: ^9.0.0
+
+  # Stockage local (alertes offline)
+  hive_flutter: ^1.1.0
+
+  # Synthèse vocale
+  flutter_tts: ^3.8.5
+
+  # Reconnaissance vocale
+  speech_to_text: ^7.3.0
+
+  # GPS
+  geolocator: ^11.0.0
+
+  # Caméra
+  camera: ^0.10.5+9
+
+  # TensorFlow Lite (YOLOv8)
+  tflite_flutter: ^0.10.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0   # ou une version compatible avec votre SDK
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/models/
+    - assets/sounds/
