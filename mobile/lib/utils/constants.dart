@@ -1,6 +1,8 @@
 class AppConstants {
-  static const String baseUrl = 'http://10.1.155.168:8081';
-
+  //real phone
+  static const String baseUrl = 'http://10.1.154.145:8081';
+  //test emulateur
+  //static const String baseUrl = 'http://10.0.2.2:8081';
   static const String loginEndpoint = '/auth/login';
   static const String sosEndpoint   = '/api/v1/alerts/sos';
   static const String ocrEndpoint   = '/api/v1/ocr/process';
