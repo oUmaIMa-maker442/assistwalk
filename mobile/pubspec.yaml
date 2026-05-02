@@ -35,12 +35,15 @@ dependencies:
 
   # GPS
   geolocator: ^11.0.0
+  geocoding: ^3.0.0
 
   # Caméra
   camera: ^0.10.5+9
 
   # TensorFlow Lite (YOLOv8)
   tflite_flutter: ^0.10.4
+
+  image: ^4.2.0
 
 dev_dependencies:
   flutter_test:
@@ -49,7 +52,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/models/
-    - assets/sounds/

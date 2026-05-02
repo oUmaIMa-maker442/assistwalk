@@ -39,3 +39,8 @@ web/dist/
 # OS
 .DS_Store
 Thumbs.db
+# Python
+venv/
+backend_navigation/venv/
+__pycache__/
+*.pyc
