@@ -1,46 +1,42 @@
-# Java / Spring Boot
-target/
-*.class
-*.jar
-*.war
-.mvn/
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-# IntelliJ
-.idea/
-*.iml
-*.iws
-
-# VS Code
-.vscode/
-
-# Flutter
-mobile/.dart_tool/
-mobile/.flutter-plugins
+# ================================
+# Flutter / Mobile
+# ================================
 mobile/.flutter-plugins-dependencies
 mobile/build/
 mobile/*.g.dart
 
-# Python / FastAPI
-ocr/__pycache__/
-ocr/*.pyc
-ocr/.venv/
+# ================================
+# Python (Backend & Navigation)
+# ================================
+venv/
+backend_navigation/venv/
 ocr/venv/
+ocr/.venv/
 
-# Node / React
+__pycache__/
+*.pyc
+
+# ================================
+# Models (ML)
+# ================================
+*.pt
+*.tflite
+backend_navigation/assistwalk_vision/models/
+
+# ================================
+# Node / Web
+# ================================
 web/node_modules/
 web/dist/
 
-# Secrets — JAMAIS versionnés
+# ================================
+# Environment / Secrets
+# ================================
 .env
 *.env
 
-# OS
+# ================================
+# OS Files
+# ================================
 .DS_Store
 Thumbs.db
-# Python
-venv/
-backend_navigation/venv/
-__pycache__/
-*.pyc
