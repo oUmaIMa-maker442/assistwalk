@@ -40,3 +40,7 @@ web/dist/
 # ================================
 .DS_Store
 Thumbs.db
+
+# IDE
+.idea/
+backend_navigation/.idea/
