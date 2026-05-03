@@ -21,7 +21,10 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
-
+    @GetMapping("/hash")                          // ← /auth/hash maintenant correct
+    public String hash(@RequestParam String password) {
+        return new BCryptPasswordEncoder(10).encode(password);  // ← force 10 comme SecurityConfig
+    }
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
         System.out.println(">>> LOGIN : " + req.getEmail());
@@ -43,7 +46,7 @@ public class AuthController {
         }
 
         var user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("Introuvable"));
+                 .orElseThrow(() -> new UsernameNotFoundException("Introuvable"));
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
         return ResponseEntity.ok(new LoginResponse(token, user.getRole(), user.getId()));

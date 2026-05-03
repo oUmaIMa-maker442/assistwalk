@@ -1,18 +1,40 @@
 # ================================
+# Java / Spring Boot
+# ================================
+target/
+*.class
+*.jar
+*.war
+.mvn/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+
+# ================================
 # Flutter / Mobile
 # ================================
+mobile/.dart_tool/
+mobile/.flutter-plugins
 mobile/.flutter-plugins-dependencies
 mobile/build/
 mobile/*.g.dart
 
 # ================================
-# Python (Backend & Navigation)
+# Python / FastAPI
 # ================================
+ocr/__pycache__/
+ocr/*.pyc
+ocr/.venv/
+ocr/venv/
 venv/
 backend_navigation/venv/
-ocr/venv/
-ocr/.venv/
-
 __pycache__/
 *.pyc
 
@@ -24,23 +46,20 @@ __pycache__/
 backend_navigation/assistwalk_vision/models/
 
 # ================================
-# Node / Web
+# Node / React
 # ================================
 web/node_modules/
 web/dist/
 
 # ================================
-# Environment / Secrets
+# Secrets — JAMAIS versionnés
 # ================================
 .env
 *.env
+backend/src/main/resources/firebase-service-account.json
 
 # ================================
-# OS Files
+# OS
 # ================================
 .DS_Store
 Thumbs.db
-
-# IDE
-.idea/
-backend_navigation/.idea/
