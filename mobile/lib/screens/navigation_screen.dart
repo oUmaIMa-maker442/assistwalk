@@ -1,10 +1,17 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:image/image.dart' as img;
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+
 import '../main.dart';
 import '../widgets/app_gradient_background.dart';
 import '../core/app_colors.dart';
-import 'sos_screen.dart';
-import '../services/detector_service.dart';
+import '../services/navigation_api_service.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
@@ -16,10 +23,17 @@ class NavigationScreen extends StatefulWidget {
 class _NavigationScreenState extends State<NavigationScreen> {
   bool isDetectionOn = true;
   bool isAudioOn = true;
-  bool isAutoMode = false;
-  final DetectorService _detectorService = DetectorService();
 
-  String currentLocation = '123 Main Street, City Center,\nCasablanca, Morocco';
+  final NavigationApiService _apiService = NavigationApiService();
+  final FlutterTts _flutterTts = FlutterTts();
+
+  bool _isAnalyzing = false;
+  bool _isStreaming = false;
+  DateTime _lastAnalysisTime = DateTime.now();
+
+  String _navigationMessage = 'Audio Feedback';
+  String currentLocation = 'Getting current location...';
+  Position? _currentPosition;
 
   CameraController? _cameraController;
   Future<void>? _initializeControllerFuture;
@@ -27,12 +41,80 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   void initState() {
     super.initState();
+    _initTts();
     _initCamera();
-    _loadDetector();
+    _loadCurrentLocation();
   }
 
-  Future<void> _loadDetector() async {
-    await _detectorService.loadModel();
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setSpeechRate(0.45);
+  }
+
+  Future<void> _loadCurrentLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        setState(() {
+          currentLocation = 'Location service disabled';
+        });
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(() {
+          currentLocation = 'Location permission denied';
+        });
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      _currentPosition = position;
+
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (!mounted) return;
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+
+        final street = place.street ?? '';
+        final locality = place.locality ?? '';
+        final country = place.country ?? '';
+
+        setState(() {
+          currentLocation = '$street, $locality\n$country';
+        });
+      } else {
+        setState(() {
+          currentLocation =
+          '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+        });
+      }
+    } catch (e) {
+      debugPrint('Location error: $e');
+
+      if (!mounted) return;
+      setState(() {
+        currentLocation = 'Unable to get location';
+      });
+    }
   }
 
   void _initCamera() {
@@ -42,19 +124,125 @@ class _NavigationScreenState extends State<NavigationScreen> {
       cameras.first,
       ResolutionPreset.medium,
       enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.yuv420,
     );
 
-    _initializeControllerFuture = _cameraController!.initialize().then((_) {
-      if (mounted) {
-        setState(() {});
-      }
+    _initializeControllerFuture = _cameraController!.initialize().then((_) async {
+      if (!mounted) return;
+
+      await _cameraController!.setFlashMode(FlashMode.off);
+
+      setState(() {});
+
+      _startImageStream();
     }).catchError((error) {
       debugPrint('Camera init error: $error');
     });
   }
 
+  void _startImageStream() {
+    if (_cameraController == null) return;
+    if (!_cameraController!.value.isInitialized) return;
+    if (_isStreaming) return;
+
+    _isStreaming = true;
+
+    _cameraController!.startImageStream((CameraImage cameraImage) async {
+      if (!isDetectionOn) return;
+      if (_isAnalyzing) return;
+
+      final now = DateTime.now();
+
+      if (now.difference(_lastAnalysisTime).inSeconds < 3) return;
+
+      _lastAnalysisTime = now;
+      _isAnalyzing = true;
+
+      if (mounted) {
+        setState(() {
+          _navigationMessage = 'Analyzing environment...';
+        });
+      }
+
+      try {
+        final Uint8List jpegBytes = _convertYUV420ToJpeg(cameraImage);
+        final message = await _apiService.analyzeImageBytes(jpegBytes);
+
+        if (!mounted) return;
+
+        setState(() {
+          _navigationMessage = message;
+        });
+
+        if (isAudioOn && message.trim().isNotEmpty) {
+          await _flutterTts.stop();
+          await _flutterTts.speak(message);
+        }
+      } catch (e) {
+        debugPrint('Navigation stream error: $e');
+
+        if (mounted) {
+          setState(() {
+            _navigationMessage = 'Connection error with navigation server';
+          });
+        }
+      } finally {
+        _isAnalyzing = false;
+      }
+    });
+  }
+
+  Uint8List _convertYUV420ToJpeg(CameraImage image) {
+    final int width = image.width;
+    final int height = image.height;
+
+    final img.Image rgbImage = img.Image(width: width, height: height);
+
+    final Plane yPlane = image.planes[0];
+    final Plane uPlane = image.planes[1];
+    final Plane vPlane = image.planes[2];
+
+    final int yRowStride = yPlane.bytesPerRow;
+    final int uvRowStride = uPlane.bytesPerRow;
+    final int uvPixelStride = uPlane.bytesPerPixel ?? 1;
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final int yIndex = y * yRowStride + x;
+
+        final int uvX = x ~/ 2;
+        final int uvY = y ~/ 2;
+        final int uvIndex = uvY * uvRowStride + uvX * uvPixelStride;
+
+        final int yp = yPlane.bytes[yIndex];
+        final int up = uPlane.bytes[uvIndex];
+        final int vp = vPlane.bytes[uvIndex];
+
+        int r = (yp + 1.402 * (vp - 128)).round();
+        int g = (yp - 0.344136 * (up - 128) - 0.714136 * (vp - 128)).round();
+        int b = (yp + 1.772 * (up - 128)).round();
+
+        r = r.clamp(0, 255);
+        g = g.clamp(0, 255);
+        b = b.clamp(0, 255);
+
+        rgbImage.setPixelRgb(x, y, r, g, b);
+      }
+    }
+
+    return Uint8List.fromList(img.encodeJpg(rgbImage, quality: 75));
+  }
+
   @override
   void dispose() {
+    _flutterTts.stop();
+
+    if (_cameraController != null &&
+        _cameraController!.value.isInitialized &&
+        _cameraController!.value.isStreamingImages) {
+      _cameraController!.stopImageStream();
+    }
+
     _cameraController?.dispose();
     super.dispose();
   }
@@ -74,22 +262,17 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 2),
-
                       Row(
                         children: [
                           _circleButton(
                             icon: Icons.arrow_back_ios_new_rounded,
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
+                            onTap: () => Navigator.pop(context),
                           ),
                           const SizedBox(width: 10),
                           const Expanded(
                             child: Center(
                               child: Text(
                                 'AssistWalk',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -111,13 +294,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 8),
-
                       _locationCard(),
-
                       const SizedBox(height: 6),
-
                       Row(
                         children: [
                           Expanded(
@@ -139,108 +318,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 8),
-
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: _cameraArea(),
-                            ),
-
-                            Positioned(
-                              top: 12,
-                              left: 12,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    isAutoMode = !isAutoMode;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black87,
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.wb_sunny_outlined,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        isAutoMode ? 'Auto' : 'Manual',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            Positioned(
-                              right: 12,
-                              bottom: 20,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => SosScreen(
-                                        onBackToHome: () {
-                                          Navigator.pop(context);
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  width: 82,
-                                  height: 82,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.sosRed,
-                                    border: Border.all(color: Colors.white, width: 4),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.sosRed.withOpacity(0.22),
-                                        blurRadius: 12,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Center(
-                                    child: Text(
-                                      'SOS',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
+                      Expanded(child: _cameraArea()),
                       const SizedBox(height: 10),
-
                       _audioFeedbackCard(),
-
                       const SizedBox(height: 4),
                     ],
                   ),
@@ -265,24 +346,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
             _cameraController!.value.isInitialized) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _cameraController!.value.previewSize!.height,
-                    height: _cameraController!.value.previewSize!.width,
-                    child: CameraPreview(_cameraController!),
-                  ),
-                ),
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withOpacity(0.04),
-                  ),
-                ),
-              ],
-            ),
+            child: CameraPreview(_cameraController!),
           );
         }
 
@@ -290,15 +354,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           return _cameraUnavailable(message: 'Camera error');
         }
 
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            color: Colors.black12,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          ),
-        );
+        return const Center(child: CircularProgressIndicator());
       },
     );
   }
@@ -339,9 +395,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textDark,
-                fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 20),
+            onPressed: _loadCurrentLocation,
           ),
         ],
       ),
@@ -366,13 +425,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           Expanded(
             child: Text(
               label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textDark,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 11),
             ),
           ),
         ],
@@ -389,15 +442,16 @@ class _NavigationScreenState extends State<NavigationScreen> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
-        children: const [
-          Icon(Icons.volume_up, color: AppColors.textDark),
-          SizedBox(width: 8),
-          Text(
-            'Audio Feedback',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
+        children: [
+          const Icon(Icons.volume_up),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _navigationMessage,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
+              ),
             ),
           ),
         ],
@@ -418,11 +472,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           color: Colors.white.withOpacity(0.92),
           borderRadius: BorderRadius.circular(21),
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: AppColors.textDark,
-        ),
+        child: Icon(icon),
       ),
     );
   }
