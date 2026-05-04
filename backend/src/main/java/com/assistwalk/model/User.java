@@ -3,6 +3,7 @@ package com.assistwalk.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,6 +25,12 @@ public class User {
     @Column(nullable = false)
     private String role;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    // Champs ajoutés par la migration V3__enrich_schema.sql
+    private String nom;
+    private String prenom;
+    private String telephone;
+    private String adresse;
+
+    @Column(name = "derniere_connexion")
+    private LocalDateTime derniereConnexion;
 }

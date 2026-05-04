@@ -1,0 +1,141 @@
+package com.assistwalk.service;
+
+import com.assistwalk.model.Alert;
+import com.assistwalk.repository.AssociationRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class AlertServiceTest {
+
+    @Mock
+    private SimpMessagingTemplate  messagingTemplate;
+
+    @Mock
+    private AssociationRepository  associationRepository;
+
+    private AlertService alertService;
+
+    @BeforeEach
+    void setUp() {
+        // Instanciation manuelle pour éviter le démarrage de Spring
+        alertService = new AlertService(messagingTemplate,
+                                        associationRepository);
+    }
+
+    // ── Cas nominal : deux accompagnateurs associés ───────────────
+
+    @Test
+    void broadcastSos_twoCompanions_shouldSendTwoMessages() {
+        // Arrange
+        Alert alert = buildAlert(1L, 42L, 35.6895, 139.6917,
+                                 "stairs");
+
+        when(associationRepository.findCompanionIdsByMalvoyantId(42L))
+                .thenReturn(List.of(10L, 20L));
+
+        // Act
+        alertService.broadcastSos(alert);
+
+        // Assert — vérifier les destinations exactes
+        ArgumentCaptor<String> destCaptor =
+                ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Object> payloadCaptor =
+                ArgumentCaptor.forClass(Object.class);
+
+        verify(messagingTemplate, times(2))
+                .convertAndSend(destCaptor.capture(),
+                                payloadCaptor.capture());
+
+        assertThat(destCaptor.getAllValues())
+                .containsExactlyInAnyOrder(
+                        "/topic/alerts/10",
+                        "/topic/alerts/20");
+    }
+
+    // ── Aucun accompagnateur associé ──────────────────────────────
+
+    @Test
+    void broadcastSos_noCompanions_shouldNotSendAnyMessage() {
+        Alert alert = buildAlert(2L, 99L, 0.0, 0.0, null);
+
+        when(associationRepository.findCompanionIdsByMalvoyantId(99L))
+                .thenReturn(List.of());
+
+        alertService.broadcastSos(alert);
+
+        // Aucun message ne doit être envoyé
+        verifyNoInteractions(messagingTemplate);
+    }
+
+    // ── Vérification du contenu du DTO envoyé ────────────────────
+
+    @Test
+    void broadcastSos_shouldIncludeCorrectAlertData() {
+        Alert alert = buildAlert(5L, 7L, 48.8566, 2.3522, "doors");
+
+        when(associationRepository.findCompanionIdsByMalvoyantId(7L))
+                .thenReturn(List.of(100L));
+
+        alertService.broadcastSos(alert);
+
+        // Capturer le payload envoyé
+        ArgumentCaptor<Object> payloadCaptor =
+                ArgumentCaptor.forClass(Object.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/alerts/100"), payloadCaptor.capture());
+
+        // Vérifier que le DTO contient bien les données de l'alerte
+        var dto = (com.assistwalk.dto.AlertNotificationDto)
+                payloadCaptor.getValue();
+
+        assertThat(dto.getAlertId()).isEqualTo(5L);
+        assertThat(dto.getUserId()).isEqualTo(7L);
+        assertThat(dto.getLatitude()).isEqualTo(48.8566);
+        assertThat(dto.getLongitude()).isEqualTo(2.3522);
+        assertThat(dto.getObstacleType()).isEqualTo("doors");
+        assertThat(dto.getStatus()).isEqualTo("ACTIVE");
+    }
+
+    // ── Un seul accompagnateur ────────────────────────────────────
+
+    @Test
+    void broadcastSos_oneCompanion_shouldSendExactlyOneMessage() {
+        Alert alert = buildAlert(3L, 55L, 51.5074, -0.1278, "person");
+
+        when(associationRepository.findCompanionIdsByMalvoyantId(55L))
+                .thenReturn(List.of(200L));
+
+        alertService.broadcastSos(alert);
+
+        verify(messagingTemplate, times(1))
+                .convertAndSend(eq("/topic/alerts/200"), any());
+    }
+
+    // ── Aide à la construction ────────────────────────────────────
+
+    private Alert buildAlert(Long id, Long userId,
+                              Double lat, Double lng,
+                              String obstacle) {
+        Alert a = new Alert();
+        a.setId(id);
+        a.setUserId(userId);
+        a.setLatitude(lat);
+        a.setLongitude(lng);
+        a.setObstacleType(obstacle);
+        a.setStatus("ACTIVE");
+        a.setCreatedAt(LocalDateTime.now());
+        return a;
+    }
+}

@@ -32,4 +32,7 @@ public class Alert {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
 }
