@@ -31,3 +31,5 @@ torchvision==0.18.0
 # Note : ultralytics et streamlit sont intentionnellement
 # absents — ils appartiennent au projet principal (mobile/
 # navigation), pas à ce micro-service OCR.
+requests
+python-dotenv

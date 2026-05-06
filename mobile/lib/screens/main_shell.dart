@@ -24,7 +24,14 @@ class _MainShellState extends State<MainShell> {
       HomeScreen(onNavigateTab: _goToTab),
       ScannerScreen(onBackToHome: () => _goToTab(0)),
       SosScreen(onBackToHome: () => _goToTab(0)),
-      const ProfileScreen(),
+      ProfileScreen(
+        onLogout: () {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login',
+                (route) => false,
+          );
+        },
+      ),
     ];
 
     return Scaffold(
@@ -47,7 +54,7 @@ class _MainShellState extends State<MainShell> {
         ),
         child: NavigationBar(
           backgroundColor: Colors.white,
-          indicatorColor: Color(0xFFE3F2FD),
+          indicatorColor: const Color(0xFFE3F2FD),
           selectedIndex: _currentIndex,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: (index) {
@@ -61,7 +68,8 @@ class _MainShellState extends State<MainShell> {
             ),
             NavigationDestination(
               icon: Icon(Icons.document_scanner_outlined),
-              selectedIcon: Icon(Icons.document_scanner, color: Color(0xFF1565C0)),
+              selectedIcon:
+              Icon(Icons.document_scanner, color: Color(0xFF1565C0)),
               label: 'Scanner',
             ),
             NavigationDestination(

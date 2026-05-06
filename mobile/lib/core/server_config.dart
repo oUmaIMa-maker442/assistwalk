@@ -11,4 +11,7 @@ class ServerConfig {
   static String get springBaseUrl => 'http://$pcIp:$springPort';
 
   static String get flaskBaseUrl => 'http://$pcIp:$flaskPort';
+
+  // 🔥 OCR
+  static String get ocrBaseUrl => "http://$pcIp:8000";
 }

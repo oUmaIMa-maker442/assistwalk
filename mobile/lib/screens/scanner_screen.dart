@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import '../widgets/app_gradient_background.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+
+import '../services/ocr_api_service.dart';
 import '../core/app_colors.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -15,193 +20,205 @@ class ScannerScreen extends StatefulWidget {
 }
 
 class _ScannerScreenState extends State<ScannerScreen> {
-  String extractedText = 'No text extracted yet.';
+  final ImagePicker _picker = ImagePicker();
+  final OcrApiService _ocrService = OcrApiService();
+  final FlutterTts _tts = FlutterTts();
+
+  File? _image;
+  String _text = "No text extracted yet";
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    await _tts.setLanguage("en-US");
+    await _tts.setSpeechRate(0.5);
+    await _tts.setPitch(1.0);
+    await _tts.setVolume(1.0);
+  }
+
+  Future<void> _speak(String text) async {
+    if (text.trim().isEmpty) return;
+
+    await _tts.stop();
+
+    // 🔥 Détection langue
+    if (RegExp(r'[ء-ي]').hasMatch(text)) {
+      await _tts.setLanguage("ar-SA");
+    } else if (_isFrenchText(text)) {
+      await _tts.setLanguage("fr-FR");
+    } else {
+      await _tts.setLanguage("en-US");
+    }
+
+    await _tts.setSpeechRate(0.48);
+    await _tts.setPitch(1.0);
+    await _tts.setVolume(1.0);
+
+    // 🔥 lecture fluide
+    final cleanText = text
+        .replaceAll('\n', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    await _tts.speak(cleanText);
+  }
+
+  bool _isFrenchText(String text) {
+    final lower = text.toLowerCase();
+
+    return RegExp(r'[éèêëàâîïôùûç]').hasMatch(lower) ||
+        lower.contains(' le ') ||
+        lower.contains(' la ') ||
+        lower.contains(' les ') ||
+        lower.contains(' un ') ||
+        lower.contains(' une ') ||
+        lower.contains(' des ') ||
+        lower.contains(' du ') ||
+        lower.contains(' de ') ||
+        lower.contains(' et ') ||
+        lower.contains(' jour ') ||
+        lower.contains(' condamné');
+  }
+
+  Future<void> _takePhoto() async {
+    await _tts.stop();
+
+    final picked = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 65,
+      maxWidth: 900,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _image = File(picked.path);
+      _isLoading = true;
+      _text = "Processing...";
+    });
+
+    try {
+      final result = await _ocrService.extractText(picked.path);
+      final text = (result['text'] ?? "No text found").toString();
+
+      setState(() {
+        _text = text.trim().isEmpty ? "No text found" : text;
+      });
+
+      await _speak(_text);
+    } catch (e) {
+      debugPrint("OCR Flutter error: $e");
+
+      setState(() {
+        _text = "OCR Error: $e";
+      });
+
+      await _speak("OCR error. Please try again.");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: AppGradientBackground(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _circleButton(
-                            Icons.arrow_back_ios_new_rounded,
-                            widget.onBackToHome,
-                          ),
-                          _circleButton(Icons.volume_up_outlined, () {}),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'AssistWalk',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Read. Understand. Assist.',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: AppColors.textGrey,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
+      backgroundColor: const Color(0xFFF6FAFF),
+      appBar: AppBar(
+        title: const Text("OCR Scanner"),
+        backgroundColor: AppColors.primaryLight,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: widget.onBackToHome,
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.volume_up_outlined),
+            onPressed: () => _speak(_text),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              height: 250,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: _image == null
+                  ? const Center(child: Text("No image"))
+                  : ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.file(
+                  _image!,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
 
-                      Container(
-                        width: double.infinity,
-                        height: 230,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Stack(
-                          children: [
-                            _corner(top: 14, left: 14),
-                            _corner(top: 14, right: 14),
-                            _corner(bottom: 14, left: 14),
-                            _corner(bottom: 14, right: 14),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-                      SizedBox(
-                        width: 190,
-                        height: 48,
-                        child: ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                          label: const Text('Take a Photo'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryLight,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      Row(
-                        children: [
-                          const Icon(Icons.description_outlined, color: AppColors.primary),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Extracted Text',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.volume_up_outlined),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.copy_outlined),
-                          ),
-                        ],
-                      ),
-
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                        child: Text(
-                          extractedText,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: AppColors.textDark,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    _text,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textDark,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
+            ),
 
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 3),
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: _isLoading ? null : _takePhoto,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryLight,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                "Take a Photo",
+                style: TextStyle(fontSize: 16),
+              ),
             ),
           ],
-        ),
-        child: Icon(icon, color: AppColors.textDark),
-      ),
-    );
-  }
-
-  Widget _corner({
-    double? top,
-    double? right,
-    double? bottom,
-    double? left,
-  }) {
-    return Positioned(
-      top: top,
-      right: right,
-      bottom: bottom,
-      left: left,
-      child: Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          border: Border(
-            top: top != null
-                ? const BorderSide(color: AppColors.primaryLight, width: 4)
-                : BorderSide.none,
-            left: left != null
-                ? const BorderSide(color: AppColors.primaryLight, width: 4)
-                : BorderSide.none,
-            right: right != null
-                ? const BorderSide(color: AppColors.primaryLight, width: 4)
-                : BorderSide.none,
-            bottom: bottom != null
-                ? const BorderSide(color: AppColors.primaryLight, width: 4)
-                : BorderSide.none,
-          ),
-          borderRadius: BorderRadius.circular(4),
         ),
       ),
     );
