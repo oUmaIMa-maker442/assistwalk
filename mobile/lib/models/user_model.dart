@@ -4,9 +4,11 @@ class UserModel {
   final String prenom;
   final String email;
   final String telephone;
-  final String bloodType;
-  final String visualImpairmentLevel;
   final String role;
+
+  final String telephoneUrgence;
+  final String groupeSanguin;
+  final String niveauDeficience;
 
   UserModel({
     required this.id,
@@ -14,9 +16,10 @@ class UserModel {
     required this.prenom,
     required this.email,
     required this.telephone,
-    required this.bloodType,
-    required this.visualImpairmentLevel,
     required this.role,
+    required this.telephoneUrgence,
+    required this.groupeSanguin,
+    required this.niveauDeficience,
   });
 
   String get fullName => '$prenom $nom'.trim();
@@ -28,9 +31,10 @@ class UserModel {
       prenom: 'Fatiha',
       email: 'fatiha@example.com',
       telephone: '+212 6 12 34 56 78',
-      bloodType: 'O+',
-      visualImpairmentLevel: 'Severe Impairment',
       role: 'VISUAL_IMPAIRED',
+      telephoneUrgence: '+212 6 12 34 56 78',
+      groupeSanguin: 'O+',
+      niveauDeficience: 'Severe Impairment',
     );
   }
 
@@ -41,10 +45,10 @@ class UserModel {
       prenom: json['prenom'] ?? '',
       email: json['email'] ?? '',
       telephone: json['telephone'] ?? '',
-      bloodType: json['bloodType'] ?? 'Not specified',
-      visualImpairmentLevel:
-      json['visualImpairmentLevel'] ?? 'Not specified',
       role: json['role'] ?? '',
+      telephoneUrgence: json['telephoneUrgence'] ?? 'Not specified',
+      groupeSanguin: json['groupeSanguin'] ?? 'Not specified',
+      niveauDeficience: json['niveauDeficience'] ?? 'Not specified',
     );
   }
 }

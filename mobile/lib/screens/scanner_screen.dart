@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../services/ocr_api_service.dart';
+import '../services/voice_command_service.dart';
 import '../core/app_colors.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -32,6 +33,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
   void initState() {
     super.initState();
     _initTts();
+    VoiceCommandService.commandNotifier.addListener(_handleVoiceCommands);
+  }
+
+  void _handleVoiceCommands() {
+    final command = VoiceCommandService.commandNotifier.value;
+    if (command == null) return;
+
+    if (command == 'take_photo') {
+      _takePhoto();
+    } else if (command == 'repeat') {
+      _speak(_text);
+    }
+
+    VoiceCommandService.clear();
   }
 
   Future<void> _initTts() async {
@@ -46,7 +61,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
     await _tts.stop();
 
-    // 🔥 Détection langue
     if (RegExp(r'[ء-ي]').hasMatch(text)) {
       await _tts.setLanguage("ar-SA");
     } else if (_isFrenchText(text)) {
@@ -59,7 +73,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
     await _tts.setPitch(1.0);
     await _tts.setVolume(1.0);
 
-    // 🔥 lecture fluide
     final cleanText = text
         .replaceAll('\n', ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
@@ -86,6 +99,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   Future<void> _takePhoto() async {
+    if (_isLoading) return;
+
     await _tts.stop();
 
     final picked = await _picker.pickImage(
@@ -130,6 +145,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   void dispose() {
+    VoiceCommandService.commandNotifier.removeListener(_handleVoiceCommands);
     _tts.stop();
     super.dispose();
   }
@@ -156,26 +172,27 @@ class _ScannerScreenState extends State<ScannerScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Container(
-              height: 250,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: _image == null
-                  ? const Center(child: Text("No image"))
-                  : ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.file(
-                  _image!,
-                  fit: BoxFit.contain,
+            Semantics(
+              label: 'Captured image preview',
+              child: Container(
+                height: 250,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: _image == null
+                    ? const Center(child: Text("No image"))
+                    : ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.file(
+                    _image!,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(12),
@@ -196,9 +213,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: _isLoading ? null : _takePhoto,
               style: ElevatedButton.styleFrom(

@@ -1,6 +1,6 @@
 class ServerConfig {
   // IP du PC où Spring Boot et Flask sont lancés
-  static const String pcIp = '192.168.1.6';
+  static const String pcIp = '10.1.150.42';
 
   // Backend Spring Boot
   static const String springPort = '8081';

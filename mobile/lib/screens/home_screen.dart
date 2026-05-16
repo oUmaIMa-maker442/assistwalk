@@ -1,14 +1,52 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
+import '../services/voice_command_service.dart';
 import 'navigation_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final Function(int) onNavigateTab;
 
   const HomeScreen({
     super.key,
     required this.onNavigateTab,
   });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    VoiceCommandService.commandNotifier.addListener(_handleVoiceCommands);
+  }
+
+  void _handleVoiceCommands() {
+    final command = VoiceCommandService.commandNotifier.value;
+    if (command == null) return;
+
+    if (command == 'start_navigation') {
+      _openNavigation();
+    }
+
+    VoiceCommandService.clear();
+  }
+
+  void _openNavigation() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const NavigationScreen(),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    VoiceCommandService.commandNotifier.removeListener(_handleVoiceCommands);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,14 +72,7 @@ class HomeScreen extends StatelessWidget {
                           iconColor: AppColors.primaryLight,
                           title: 'Navigation',
                           subtitle: 'Get audio guidance and navigate safely.',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const NavigationScreen(),
-                              ),
-                            );
-                          },
+                          onTap: _openNavigation,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -54,7 +85,7 @@ class HomeScreen extends StatelessWidget {
                           title: 'SOS',
                           subtitle: 'Send an emergency alert and get help.',
                           onTap: () {
-                            onNavigateTab(2);
+                            widget.onNavigateTab(2);
                           },
                         ),
                       ),
@@ -66,9 +97,10 @@ class HomeScreen extends StatelessWidget {
                           icon: Icons.document_scanner_outlined,
                           iconColor: AppColors.scannerGreen,
                           title: 'Scanner',
-                          subtitle: 'Scan the environment to detect objects and read text.',
+                          subtitle:
+                          'Scan the environment to detect objects and read text.',
                           onTap: () {
-                            onNavigateTab(1);
+                            widget.onNavigateTab(1);
                           },
                         ),
                       ),
@@ -101,24 +133,13 @@ class HomeScreen extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _circleIcon(Icons.menu),
-                _circleIcon(Icons.volume_up_outlined),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 20),
             const Icon(
               Icons.blind,
               size: 48,
               color: AppColors.primary,
             ),
-
             const SizedBox(height: 8),
-
             const Text(
               'AssistWalk',
               style: TextStyle(
@@ -127,9 +148,7 @@ class HomeScreen extends StatelessWidget {
                 color: AppColors.textDark,
               ),
             ),
-
             const SizedBox(height: 4),
-
             const Text(
               'Navigate. Detect. Stay Safe.',
               style: TextStyle(
@@ -137,9 +156,7 @@ class HomeScreen extends StatelessWidget {
                 color: AppColors.textGrey,
               ),
             ),
-
             const SizedBox(height: 14),
-
             const Text(
               'Welcome back',
               style: TextStyle(
@@ -148,9 +165,7 @@ class HomeScreen extends StatelessWidget {
                 color: AppColors.textDark,
               ),
             ),
-
             const SizedBox(height: 4),
-
             const Text(
               'How can we assist you today?',
               style: TextStyle(
@@ -163,30 +178,6 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  static Widget _circleIcon(IconData icon) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        shape: BoxShape.circle,
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Icon(
-        icon,
-        color: AppColors.textDark,
-        size: 27,
-      ),
-    );
-  }
-
   static Widget _featureCard(
       BuildContext context, {
         required Color color,
@@ -273,34 +264,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _HeaderClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 26);
-
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height + 6,
-      size.width * 0.50,
-      size.height - 12,
-    );
-
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height - 30,
-      size.width,
-      size.height - 8,
-    );
-
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
 class _WaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

@@ -8,6 +8,12 @@ version: 1.0.0+1
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  min_sdk_android: 21
+
 dependencies:
   flutter:
     sdk: flutter
@@ -45,6 +51,9 @@ dependencies:
 
   image: ^4.2.0
   image_picker: ^1.2.2
+  porcupine_flutter: ^4.0.0
+  flutter_launcher_icons: ^0.14.4
+
 
 dev_dependencies:
   flutter_test:
@@ -53,3 +62,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo.png

@@ -33,4 +33,10 @@ public class User {
 
     @Column(name = "derniere_connexion")
     private LocalDateTime derniereConnexion;
+
+    @OneToOne(mappedBy = "user",
+            fetch = FetchType.LAZY,
+            optional = true,
+            cascade = CascadeType.ALL)
+    private Malvoyant malvoyant;
 }

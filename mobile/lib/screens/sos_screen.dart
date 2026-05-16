@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../widgets/app_gradient_background.dart';
 import '../core/app_colors.dart';
 import '../services/api_service.dart';
+import '../services/voice_command_service.dart';
 
 class SosScreen extends StatefulWidget {
   final VoidCallback onBackToHome;
@@ -36,11 +37,27 @@ class _SosScreenState extends State<SosScreen> {
     super.initState();
     _initTts();
     _loadCurrentLocation();
+    VoiceCommandService.commandNotifier.addListener(_handleVoiceCommands);
+  }
+
+  void _handleVoiceCommands() {
+    final command = VoiceCommandService.commandNotifier.value;
+    if (command == null) return;
+
+    if (command == 'send_sos') {
+      _sendSos();
+    } else if (command == 'repeat') {
+      _speak(_statusMessage);
+    }
+
+    VoiceCommandService.clear();
   }
 
   Future<void> _initTts() async {
     await _flutterTts.setLanguage("en-US");
     await _flutterTts.setSpeechRate(0.45);
+    await _flutterTts.setPitch(1.0);
+    await _flutterTts.setVolume(1.0);
   }
 
   Future<void> _speak(String message) async {
@@ -173,6 +190,7 @@ class _SosScreenState extends State<SosScreen> {
 
   @override
   void dispose() {
+    VoiceCommandService.commandNotifier.removeListener(_handleVoiceCommands);
     _flutterTts.stop();
     super.dispose();
   }
@@ -196,7 +214,6 @@ class _SosScreenState extends State<SosScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 12),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -216,9 +233,7 @@ class _SosScreenState extends State<SosScreen> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 16),
-
                         const Text(
                           'AssistWalk',
                           style: TextStyle(
@@ -227,9 +242,7 @@ class _SosScreenState extends State<SosScreen> {
                             color: AppColors.textDark,
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
                         const Text(
                           'Emergency Alert',
                           style: TextStyle(
@@ -237,13 +250,9 @@ class _SosScreenState extends State<SosScreen> {
                             color: AppColors.textGrey,
                           ),
                         ),
-
                         const SizedBox(height: 18),
-
                         _locationCard(),
-
                         const SizedBox(height: 28),
-
                         const Text(
                           'SOS',
                           style: TextStyle(
@@ -252,9 +261,7 @@ class _SosScreenState extends State<SosScreen> {
                             color: AppColors.textDark,
                           ),
                         ),
-
                         const SizedBox(height: 10),
-
                         Text(
                           _statusMessage,
                           textAlign: TextAlign.center,
@@ -263,9 +270,7 @@ class _SosScreenState extends State<SosScreen> {
                             color: AppColors.textGrey,
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
                         GestureDetector(
                           onTap: _isSending ? null : _sendSos,
                           child: AnimatedOpacity(
@@ -306,7 +311,6 @@ class _SosScreenState extends State<SosScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 30),
                       ],
                     ),

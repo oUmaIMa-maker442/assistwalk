@@ -1,37 +1,27 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: assistwalk-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-assistwalk}
-      POSTGRES_USER: ${POSTGRES_USER:-assistwalk_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: assistwalk
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-assistwalk_user}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   ocr-service:
     build:
-      context: ../ocr        # chemin relatif vers votre dossier ocr/
+      context: ../ocr
       dockerfile: Dockerfile
     container_name: assistwalk-ocr
+    restart: unless-stopped
     ports:
       - "8000:8000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 15s
-      timeout: 10s
-      start_period: 60s      # laisse le temps à EasyOCR de charger
-      retries: 3
-    restart: unless-stopped
+    env_file:
+      - ../ocr/.env
 
 volumes:
   postgres_data:
