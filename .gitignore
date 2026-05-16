@@ -37,6 +37,7 @@ venv/
 backend_navigation/venv/
 __pycache__/
 *.pyc
+ocr\.env
 
 # ================================
 # Models (ML)

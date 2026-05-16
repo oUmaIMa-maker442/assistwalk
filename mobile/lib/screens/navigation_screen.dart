@@ -12,6 +12,7 @@ import '../main.dart';
 import '../widgets/app_gradient_background.dart';
 import '../core/app_colors.dart';
 import '../services/navigation_api_service.dart';
+import 'sos_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
@@ -49,6 +50,40 @@ class _NavigationScreenState extends State<NavigationScreen> {
   Future<void> _initTts() async {
     await _flutterTts.setLanguage("en-US");
     await _flutterTts.setSpeechRate(0.45);
+  }
+
+  Future<void> _speak(String message) async {
+    if (!isAudioOn || message.trim().isEmpty) return;
+    await _flutterTts.stop();
+    await _flutterTts.speak(message);
+  }
+
+  Future<void> _openSosScreen() async {
+    await _flutterTts.stop();
+
+    if (_cameraController != null &&
+        _cameraController!.value.isInitialized &&
+        _cameraController!.value.isStreamingImages) {
+      await _cameraController!.stopImageStream();
+      _isStreaming = false;
+    }
+
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SosScreen(
+          onBackToHome: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+
+    if (mounted) {
+      _startImageStream();
+    }
   }
 
   Future<void> _loadCurrentLocation() async {
@@ -174,10 +209,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           _navigationMessage = message;
         });
 
-        if (isAudioOn && message.trim().isNotEmpty) {
-          await _flutterTts.stop();
-          await _flutterTts.speak(message);
-        }
+        await _speak(message);
       } catch (e) {
         debugPrint('Navigation stream error: $e');
 
@@ -319,7 +351,51 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Expanded(child: _cameraArea()),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: _cameraArea(),
+                            ),
+                            Positioned(
+                              right: 16,
+                              bottom: 16,
+                              child: GestureDetector(
+                                onTap: _openSosScreen,
+                                child: Container(
+                                  width: 74,
+                                  height: 74,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.sosRed,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 4,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.sosRed.withOpacity(0.35),
+                                        blurRadius: 18,
+                                        spreadRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      'SOS',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 10),
                       _audioFeedbackCard(),
                       const SizedBox(height: 4),
