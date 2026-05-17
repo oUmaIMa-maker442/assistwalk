@@ -6,7 +6,7 @@ export default function PrivateRoute({ children, requiredRole }) {
     return <Navigate to="/login" replace />;
   }
   if (requiredRole && getRole() !== requiredRole) {
-    return <Navigate to="/map" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 }

@@ -123,7 +123,11 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       saveAuth(data.token, data.role, data.userId);
-      navigate('/dashboard');
+      if (data.role === 'ADMIN') {
+        navigate('/admin');  // page de gestion des utilisateurs
+      } else {
+        navigate('/dashboard');     // dashboard accompagnateur
+      }
     } catch {
       setError('Invalid email or password. Please try again.');
     } finally {
