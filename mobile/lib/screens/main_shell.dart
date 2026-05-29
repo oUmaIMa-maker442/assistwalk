@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+
 import 'home_screen.dart';
 import 'scanner_screen.dart';
 import 'sos_screen.dart';
@@ -20,6 +24,10 @@ class _MainShellState extends State<MainShell> {
 
   bool _speechReady = false;
   bool _isListening = false;
+
+  final Set<int> _activePointers = {};
+  Timer? _twoFingerHoldTimer;
+  bool _twoFingerCommandStarted = false;
 
   @override
   void initState() {
@@ -52,6 +60,44 @@ class _MainShellState extends State<MainShell> {
     setState(() => _currentIndex = index);
   }
 
+  void _onPointerDown(PointerDownEvent event) {
+    _activePointers.add(event.pointer);
+
+    if (_activePointers.length >= 2 && !_twoFingerCommandStarted) {
+      _twoFingerHoldTimer?.cancel();
+
+      _twoFingerHoldTimer = Timer(
+        const Duration(milliseconds: 900),
+            () async {
+          if (_activePointers.length >= 2 && mounted) {
+            _twoFingerCommandStarted = true;
+
+            await HapticFeedback.mediumImpact();
+            await _listenCommand();
+          }
+        },
+      );
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    _activePointers.remove(event.pointer);
+
+    if (_activePointers.length < 2) {
+      _twoFingerHoldTimer?.cancel();
+      _twoFingerCommandStarted = false;
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    _activePointers.remove(event.pointer);
+
+    if (_activePointers.length < 2) {
+      _twoFingerHoldTimer?.cancel();
+      _twoFingerCommandStarted = false;
+    }
+  }
+
   Future<void> _listenCommand() async {
     if (!_speechReady) {
       await _initSpeech();
@@ -75,7 +121,7 @@ class _MainShellState extends State<MainShell> {
     _showMessage('Listening...');
 
     await _speech.listen(
-      localeId: 'en_US',
+      localeId: null,
       listenFor: const Duration(seconds: 7),
       pauseFor: const Duration(seconds: 2),
       partialResults: true,
@@ -106,69 +152,71 @@ class _MainShellState extends State<MainShell> {
   }
 
   String? _normalizeCommand(String text) {
-    if (text.contains('home') || text.contains('accueil')) {
+
+    text = text.toLowerCase().trim();
+
+    // HOME
+    if (text.contains('home') ||
+        text.contains('accueil') ||
+        text.contains('الرئيسية') ||
+        text.contains('raissiya') ||
+        text.contains('raisiya')) {
       return 'home';
     }
 
+    // NAVIGATION
     if (text.contains('navigation') ||
-        text.contains('navigate') ||
-        text.contains('guide') ||
-        text.contains('guide me') ||
-        text.contains('camera') ||
-        text.contains('open navigation')) {
+        text.contains('توجيه') ||
+        text.contains('taouji') ||
+        text.contains('taougi')) {
       return 'navigation';
     }
 
+    // SCANNER
     if (text.contains('scanner') ||
-        text.contains('scan') ||
-        text.contains('ocr')) {
+        text.contains('ماسح') ||
+        text.contains('massih') ||
+        text.contains('masi7')) {
       return 'scanner';
     }
 
+    // SOS
     if (text.contains('sos') ||
-        text.contains('help') ||
-        text.contains('emergency') ||
-        text.contains('urgence')) {
+        text.contains('نجدة') ||
+        text.contains('najda') ||
+        text.contains('majda') ||
+        text.contains('neige')) {
       return 'sos';
     }
 
+    // PROFILE
     if (text.contains('profile') ||
         text.contains('profil') ||
-        text.contains('account') ||
-        text.contains('compte')) {
+        text.contains('الملف') ||
+        text.contains('profilo')) {
       return 'profile';
     }
 
-    if (text.contains('take photo') ||
-        text.contains('take a photo') ||
-        text.contains('capture') ||
-        text.contains('photo') ||
-        text.contains('read text') ||
-        text.contains('read the text')) {
+    // PHOTO
+    if (text.contains('photo') ||
+        text.contains('صورة') ||
+        text.contains('soura')) {
       return 'take_photo';
     }
 
+    // REPEAT
     if (text.contains('repeat') ||
-        text.contains('read again') ||
-        text.contains('say again') ||
-        text.contains('repete') ||
-        text.contains('répète')) {
+        text.contains('إعادة') ||
+        text.contains('i3ada') ||
+        text.contains('again')) {
       return 'repeat';
     }
 
-    if (text.contains('send sos') ||
-        text.contains('send emergency') ||
-        text.contains('send alert') ||
-        text.contains('send help') ||
-        text.contains('alerte')) {
-      return 'send_sos';
-    }
-
+    // LOGOUT
     if (text.contains('logout') ||
-        text.contains('log out') ||
-        text.contains('sign out') ||
-        text.contains('deconnexion') ||
-        text.contains('déconnexion')) {
+        text.contains('déconnexion') ||
+        text.contains('خروج') ||
+        text.contains('khoroj')) {
       return 'logout';
     }
 
@@ -235,8 +283,9 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
-  _speech.stop();
-  super.dispose();
+    _twoFingerHoldTimer?.cancel();
+    _speech.stop();
+    super.dispose();
   }
 
   @override
@@ -246,67 +295,111 @@ class _MainShellState extends State<MainShell> {
       ScannerScreen(onBackToHome: () => _goToTab(0)),
       SosScreen(onBackToHome: () => _goToTab(0)),
       ProfileScreen(
-        onLogout: () => Navigator.of(context)
-            .pushNamedAndRemoveUntil('/', (route) => false),
+        onLogout: () => Navigator.of(context).pushNamedAndRemoveUntil(
+          '/',
+              (route) => false,
+        ),
       ),
     ];
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: screens[_currentIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: _listenCommand,
-        backgroundColor:
-        _isListening ? Colors.red : const Color(0xFF1565C0),
-        child: Icon(
-          _isListening ? Icons.mic : Icons.mic_none,
-          color: Colors.white,
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            screens[_currentIndex],
+
+            if (_isListening)
+              Positioned(
+                top: 55,
+                left: 20,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1565C0),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.mic, color: Colors.white),
+                      SizedBox(width: 10),
+                      Text(
+                        'Listening...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+        bottomNavigationBar: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, -2),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          backgroundColor: Colors.white,
-          indicatorColor: const Color(0xFFE3F2FD),
-          selectedIndex: _currentIndex,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          onDestinationSelected: (i) => setState(() => _currentIndex = i),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home, color: Color(0xFF1565C0)),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.document_scanner_outlined),
-              selectedIcon:
-              Icon(Icons.document_scanner, color: Color(0xFF1565C0)),
-              label: 'Scanner',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.sos_outlined),
-              selectedIcon: Icon(Icons.sos, color: Color(0xFF1565C0)),
-              label: 'SOS',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person, color: Color(0xFF1565C0)),
-              label: 'Profile',
-            ),
-          ],
+          child: NavigationBar(
+            backgroundColor: Colors.white,
+            indicatorColor: const Color(0xFFE3F2FD),
+            selectedIndex: _currentIndex,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            onDestinationSelected: (i) => setState(() => _currentIndex = i),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home, color: Color(0xFF1565C0)),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.document_scanner_outlined),
+                selectedIcon: Icon(
+                  Icons.document_scanner,
+                  color: Color(0xFF1565C0),
+                ),
+                label: 'Scanner',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.sos_outlined),
+                selectedIcon: Icon(Icons.sos, color: Color(0xFF1565C0)),
+                label: 'SOS',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person, color: Color(0xFF1565C0)),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );
