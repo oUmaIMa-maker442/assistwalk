@@ -9,11 +9,14 @@ import java.time.LocalDateTime;
 @Builder
 public class AlertDto {
     private Long          id;
-    private Long          userId;       // ID du malvoyant
+    private Long          userId;
+    private String        userPrenom;
+    private String        userNom;
+    private String        userPhotoUrl;
     private Double        latitude;
     private Double        longitude;
     private String        obstacleType;
     private String        status;
     private LocalDateTime createdAt;
-    private LocalDateTime resolvedAt;  // null si encore active
+    private LocalDateTime resolvedAt;
 }

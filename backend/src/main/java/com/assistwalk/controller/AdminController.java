@@ -4,6 +4,8 @@ package com.assistwalk.controller;
 import com.assistwalk.dto.*;
 import com.assistwalk.service.AdminAssociationService;
 import com.assistwalk.service.AdminUserService;
+import com.assistwalk.service.AlertService;
+import com.assistwalk.dto.UserProfileDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,12 +17,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasRole('ADMIN')")   // Protection globale sur tout le contrôleur
+@PreAuthorize("hasAuthority('ROLE_ADMIN')") // Protection globale sur tout le contrôleur
 @RequiredArgsConstructor
 public class AdminController {
 
     private final AdminUserService        adminUserService;
     private final AdminAssociationService adminAssociationService;
+    private final AlertService            alertService;
 
     // ── CRUD Utilisateurs ─────────────────────────────────────────
 
@@ -32,6 +35,11 @@ public class AdminController {
     @GetMapping("/users/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(adminUserService.getUserById(id));
+    }
+
+    @GetMapping("/users/{id}/profile")
+    public ResponseEntity<UserProfileDto> getUserProfile(@PathVariable Long id) {
+        return ResponseEntity.ok(adminUserService.getUserProfile(id));
     }
 
     @PostMapping("/users")
@@ -52,6 +60,13 @@ public class AdminController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         adminUserService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── Analytics / Alerts ───────────────────────────────────────
+
+    @GetMapping("/alerts")
+    public ResponseEntity<List<AlertDto>> getAllAlerts() {
+        return ResponseEntity.ok(alertService.getAllAlerts());
     }
 
     // ── Gestion des associations ──────────────────────────────────

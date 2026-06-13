@@ -13,14 +13,15 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     // Alertes d'un malvoyant par statut
     List<Alert> findByUserIdAndStatus(Long userId, String status);
 
-    // Toutes les alertes actives d'une liste de malvoyants
-    // Utilisé par l'accompagnateur pour voir ses malvoyants associés
+    // Alertes actives + résolues aujourd'hui pour le dashboard compagnon
     @Query("SELECT a FROM Alert a " +
             "WHERE a.userId IN :malvoyantIds " +
-            "AND a.status = 'ACTIVE' " +
+            "AND (a.status = 'ACTIVE' " +
+            "     OR (a.status = 'RESOLVED' AND a.resolvedAt >= :todayStart)) " +
             "ORDER BY a.createdAt DESC")
-    List<Alert> findActiveByMalvoyantIds(
-            @Param("malvoyantIds") List<Long> malvoyantIds);
+    List<Alert> findActiveAndResolvedTodayByMalvoyantIds(
+            @Param("malvoyantIds") List<Long> malvoyantIds,
+            @Param("todayStart") java.time.LocalDateTime todayStart);
 
     // Historique paginable (Phase 5)
     List<Alert> findByUserIdOrderByCreatedAtDesc(Long userId);

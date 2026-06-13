@@ -36,13 +36,13 @@ public class FcmTokenController {
 
         if (newToken == null || newToken.isBlank()) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("message", "fcmToken est requis"));
+                    .body(Map.of("message", "fcmToken is required"));
         }
 
         var user = userRepository
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("Introuvable"));
+                        new UsernameNotFoundException("User not found"));
 
         // Upsert : mettre à jour si le token existe déjà,
         // sinon créer une nouvelle entrée
@@ -62,6 +62,6 @@ public class FcmTokenController {
                 );
 
         return ResponseEntity.ok(
-                Map.of("message", "Token FCM enregistré"));
+                Map.of("message", "FCM token registered"));
     }
 }

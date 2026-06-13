@@ -35,7 +35,7 @@ public class AlertController {
         var user = userRepository
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("Utilisateur introuvable"));
+                        new UsernameNotFoundException("User not found"));
 
         Alert alert = new Alert();
         alert.setUserId(user.getId());
@@ -69,14 +69,14 @@ public class AlertController {
      * Accessible aux rôles COMPANION et ADMIN.
      */
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('COMPANION', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_COMPANION', 'ROLE_ADMIN')")
     public ResponseEntity<List<AlertDto>> getActiveAlerts(
             @AuthenticationPrincipal UserDetails userDetails) {
 
         var user = userRepository
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("Introuvable"));
+                        new UsernameNotFoundException("User not found"));
 
         List<AlertDto> alerts =
                 alertService.getActiveAlertsForCompanion(user.getId());
@@ -89,7 +89,7 @@ public class AlertController {
      * Marque une alerte comme résolue.
      */
     @PatchMapping("/{id}/resolve")
-    @PreAuthorize("hasAnyRole('COMPANION', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_COMPANION', 'ROLE_ADMIN')")
     public ResponseEntity<AlertDto> resolveAlert(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -97,7 +97,7 @@ public class AlertController {
         var user = userRepository
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("Introuvable"));
+                        new UsernameNotFoundException("User not found"));
 
         AlertDto resolved = alertService.resolveAlert(id, user.getId());
         return ResponseEntity.ok(resolved);

@@ -7,9 +7,9 @@ import lombok.Data;
 @Data
 public class AssociationRequest {
 
-    @NotNull(message = "malvoyantId requis")
+    @NotNull(message = "malvoyantId is required")
     private Long malvoyantId;
 
-    @NotNull(message = "accompagnateurId requis")
+    @NotNull(message = "accompagnateurId is required")
     private Long accompagnateurId;
 }

@@ -5,6 +5,7 @@ import com.assistwalk.security.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -26,8 +27,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
-    private final UserDetailsServiceImpl userDetailsService;
-    private final CorsConfigurationSource corsConfigurationSource; // Injecté depuis CorsConfig
+    private final UserDetailsServiceImpl  userDetailsService;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -45,14 +46,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // ← active CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s ->
                         s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+
+                        // ── Public ────────────────────────────────────────────────────
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+
+                        // ── Profil utilisateur ────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET,    "/api/v1/users/me").authenticated()
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/users/me/photo").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/me/photo").authenticated()
+
+                        // ── Alertes ───────────────────────────────────────────────────
+                        // SOS : accessible à tout utilisateur authentifié (malvoyant)
+                        .requestMatchers(HttpMethod.POST,  "/api/v1/alerts/sos").authenticated()
+                        // Active + resolve : réservés COMPANION et ADMIN via @PreAuthorize
+                        .requestMatchers(HttpMethod.GET,   "/api/v1/alerts/active").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/alerts/*/resolve").authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
