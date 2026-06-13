@@ -114,6 +114,7 @@ export default function LoginPage() {
   const [showPwd,    setShowPwd]    = useState(false);
   const [error,      setError]      = useState('');
   const [loading,    setLoading]    = useState(false);
+  const [cardHov,    setCardHov]    = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -124,9 +125,9 @@ export default function LoginPage() {
       const { data } = await api.post('/auth/login', { email, password });
       saveAuth(data.token, data.role, data.userId);
       if (data.role === 'ADMIN') {
-        navigate('/admin');  // page de gestion des utilisateurs
+        navigate('/admin');
       } else {
-        navigate('/dashboard');     // dashboard accompagnateur
+        navigate('/dashboard');
       }
     } catch {
       setError('Invalid email or password. Please try again.');
@@ -241,13 +242,21 @@ export default function LoginPage() {
           </div>
 
           {/* ═══ RIGHT — Card ════════════════════════════════ */}
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '24px',
-            padding: '36px 40px 32px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
-            border: '1px solid #f0f0f0',
-          }}>
+          <div
+            onMouseEnter={() => setCardHov(true)}
+            onMouseLeave={() => setCardHov(false)}
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '36px 40px 32px',
+              boxShadow: cardHov
+                ? '0 20px 60px rgba(0,0,0,0.13), 0 4px 16px rgba(37,99,235,0.08)'
+                : '0 8px 40px rgba(0,0,0,0.08)',
+              border: cardHov ? '1px solid #e8eef8' : '1px solid #f0f0f0',
+              transform: cardHov ? 'translateY(-4px)' : 'translateY(0)',
+              transition: 'transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease',
+            }}
+          >
 
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
@@ -335,8 +344,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Remember me + Forgot */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {/* Remember me (sans Forgot password) */}
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <label style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
                   cursor: 'pointer', fontSize: '13px', color: '#374151',
@@ -358,13 +367,6 @@ export default function LoginPage() {
                   </div>
                   Remember me
                 </label>
-                <button type="button" style={{
-                  background: 'none', border: 'none',
-                  color: '#2563eb', fontSize: '13px',
-                  fontWeight: 600, cursor: 'pointer',
-                }}>
-                  Forgot password?
-                </button>
               </div>
 
               {/* Error */}
@@ -411,20 +413,6 @@ export default function LoginPage() {
                 )}
               </button>
 
-              {/* Divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}/>
-                <span style={{ color: '#9ca3af', fontSize: '12px' }}>or</span>
-                <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}/>
-              </div>
-
-              {/* Support */}
-              <p style={{ textAlign: 'center', fontSize: '13px', color: '#6b7280', margin: 0 }}>
-                Need help?{' '}
-                <a href="#" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
-                  Contact support
-                </a>
-              </p>
             </form>
           </div>
         </div>
@@ -435,7 +423,7 @@ export default function LoginPage() {
         textAlign: 'center', padding: '10px',
         fontSize: '12px', color: '#9ca3af', flexShrink: 0,
       }}>
-        © 2024 AssistWalk. All rights reserved.
+        © 2026 AssistWalk. All rights reserved.
       </footer>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

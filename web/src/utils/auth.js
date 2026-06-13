@@ -1,16 +1,28 @@
-export const saveAuth = (token, role, userId) => {
-  localStorage.setItem('jwt_token', token);
-  localStorage.setItem('user_role', role);
-  localStorage.setItem('user_id',   String(userId));
-};
+// src/utils/auth.js
+// Toujours localStorage — la durée d'expiration est gérée côté backend (JWT).
 
-export const getToken  = () => localStorage.getItem('jwt_token');
-export const getRole   = () => localStorage.getItem('user_role');
-export const getUserId = () => localStorage.getItem('user_id');
+export function saveAuth(token, role, userId, mustChangePassword = false) {
+  localStorage.setItem('token',              token);
+  localStorage.setItem('role',               role);
+  localStorage.setItem('userId',             String(userId));
+  localStorage.setItem('mustChangePassword', String(mustChangePassword));
+}
 
-export const isAuthenticated = () => !!getToken();
+export function getToken()           { return localStorage.getItem('token'); }
+export function getRole()            { return localStorage.getItem('role'); }
+export function getUserId()          {
+  const id = localStorage.getItem('userId');
+  return id ? parseInt(id) : null;
+}
+export function mustChangePassword() {
+  return localStorage.getItem('mustChangePassword') === 'true';
+}
+export function isAuthenticated()    { return !!getToken(); }
 
-export const logout = () => {
-  localStorage.clear();
+export function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('mustChangePassword');
   window.location.href = '/login';
-};
+}

@@ -9,19 +9,17 @@ import lombok.Data;
 @Data
 public class CreateUserRequest {
 
-    @Email(message = "Format email invalide")
-    @NotBlank(message = "Email requis")
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
     private String email;
 
-    @NotBlank(message = "Mot de passe requis")
-    private String password;
-
-    @NotBlank(message = "Rôle requis")
+    @NotBlank(message = "Role is required")
     @Pattern(regexp = "VISUAL_IMPAIRED|COMPANION|ADMIN",
-            message = "Rôle invalide")
+            message = "Invalid role")
     private String role;
 
     private String nom;
     private String prenom;
     private String telephone;
+    private String adresse;
 }

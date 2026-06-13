@@ -4,6 +4,7 @@ import com.assistwalk.dto.AlertDto;
 import com.assistwalk.dto.AlertNotificationDto;
 import com.assistwalk.exception.ResourceNotFoundException;
 import com.assistwalk.model.Alert;
+import com.assistwalk.model.User;
 import com.assistwalk.repository.AlertRepository;
 import com.assistwalk.repository.AssociationRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,16 +15,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class AlertService {
 
-    private final SimpMessagingTemplate messagingTemplate;
-    private final AssociationRepository associationRepository;
-    private final AlertRepository       alertRepository;
-    private final FcmService            fcmService;
+    private final SimpMessagingTemplate                    messagingTemplate;
+    private final AssociationRepository                    associationRepository;
+    private final AlertRepository                          alertRepository;
+    private final FcmService                               fcmService;
+    private final EmailService                             emailService;
+    private final com.assistwalk.repository.UserRepository userRepository;
 
     // ── Diffusion SOS ─────────────────────────────────────────────
 
@@ -62,7 +66,29 @@ public class AlertService {
                     "🚨 Alerte SOS",
                     "Un malvoyant que vous accompagnez a déclenché " +
                             "une alerte. Consultez la carte.");
+
+            // 3. Email SOS — fallback offline, ne propage jamais d'exception
+            Optional<User> companionOpt = userRepository.findById(companionId);
+            if (companionOpt.isEmpty()) {
+                log.warn("[EMAIL] Companion {} introuvable — email SOS non envoyé", companionId);
+                continue;
+            }
+            try {
+                emailService.sendSosAlertEmail(companionOpt.get(), savedAlert);
+                log.info("[EMAIL] SOS email envoyé → companion {}", companionId);
+            } catch (Exception ex) {
+                log.error("[EMAIL] Échec envoi SOS email → companion {} : {}",
+                        companionId, ex.getMessage());
+            }
         }
+    }
+
+    // ── Admin : toutes les alertes ────────────────────────────────
+
+    public List<AlertDto> getAllAlerts() {
+        return alertRepository.findAll().stream()
+                .map(this::toDto)
+                .toList();
     }
 
     // ── Endpoints accompagnateur ──────────────────────────────────
@@ -77,13 +103,14 @@ public class AlertService {
                 .findMalvoyantIdsByCompanionId(companionId);
 
         if (malvoyantIds.isEmpty()) {
-            log.debug("[ALERT] Aucun malvoyant associé à companion {}",
-                    companionId);
+            log.debug("[ALERT] Aucun malvoyant associé à companion {}", companionId);
             return List.of();
         }
 
+        java.time.LocalDateTime todayStart = java.time.LocalDate.now().atStartOfDay();
+
         return alertRepository
-                .findActiveByMalvoyantIds(malvoyantIds)
+                .findActiveAndResolvedTodayByMalvoyantIds(malvoyantIds, todayStart)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -129,9 +156,13 @@ public class AlertService {
     // ── Mapper interne ────────────────────────────────────────────
 
     private AlertDto toDto(Alert alert) {
+        com.assistwalk.model.User user = userRepository.findById(alert.getUserId()).orElse(null);
         return AlertDto.builder()
                 .id(alert.getId())
                 .userId(alert.getUserId())
+                .userPrenom(user != null ? user.getPrenom() : null)
+                .userNom(user != null ? user.getNom() : null)
+                .userPhotoUrl(user != null ? user.getPhotoUrl() : null)
                 .latitude(alert.getLatitude())
                 .longitude(alert.getLongitude())
                 .obstacleType(alert.getObstacleType())
