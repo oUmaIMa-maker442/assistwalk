@@ -9,6 +9,7 @@ class UserModel {
   final String telephoneUrgence;
   final String groupeSanguin;
   final String niveauDeficience;
+  final String? photoUrl;
 
   UserModel({
     required this.id,
@@ -20,6 +21,7 @@ class UserModel {
     required this.telephoneUrgence,
     required this.groupeSanguin,
     required this.niveauDeficience,
+    this.photoUrl,
   });
 
   String get fullName => '$prenom $nom'.trim();
