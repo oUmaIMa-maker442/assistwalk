@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OcrServiceUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleOcrUnavailable(
             OcrServiceUnavailableException ex) {
-        log.error("[API] Service OCR indisponible : {}", ex.getMessage());
+        log.error("[API] OCR service unavailable: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(errorBody(503, ex.getMessage()));
     }
@@ -26,9 +26,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OcrClientException.class)
     public ResponseEntity<Map<String, Object>> handleOcrClient(
             OcrClientException ex) {
-        log.error("[API] Erreur OCR : {}", ex.getMessage());
+        log.error("[API] OCR error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(errorBody(500, "Erreur interne OCR : " + ex.getMessage()));
+                .body(errorBody(500, "Internal OCR error: " + ex.getMessage()));
     }
 
     // Fichier trop volumineux → 400
@@ -37,16 +37,16 @@ public class GlobalExceptionHandler {
             MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(errorBody(400,
-                        "Fichier trop volumineux. Taille max : 10 Mo."));
+                        "File too large. Maximum size: 10 MB."));
     }
 
     // Erreurs génériques non gérées → 500
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(
             Exception ex) {
-        log.error("[API] Erreur non gérée : {}", ex.getMessage(), ex);
+        log.error("[API] Unhandled error: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(errorBody(500, "Erreur interne du serveur."));
+                .body(errorBody(500, "Internal server error."));
     }
 
     private Map<String, Object> errorBody(int status, String message) {
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<Map<String, Object>> handleForbidden(
             SecurityException ex) {
-        log.warn("[API] Accès refusé : {}", ex.getMessage());
+        log.warn("[API] Access denied: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(errorBody(403, ex.getMessage()));
     }

@@ -32,7 +32,7 @@ public class OcrController {
 
         // Récupérer l'utilisateur connecté
         var user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("Utilisateur introuvable"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         // Appeler le micro-service OCR
         Map<String, Object> result = ocrClient.extractText(

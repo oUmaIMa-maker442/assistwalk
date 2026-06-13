@@ -6,7 +6,7 @@ import LoginPage             from './pages/LoginPage';
 import MapPage               from './pages/MapPage';
 import HistoryPage           from './pages/HistoryPage';
 import DashboardPage         from './pages/DashboardPage';
-
+import ProfilePage from './pages/ProfilePage';
 // Pages admin — à créer (voir ci-dessous)
 import AdminDashboardPage    from './pages/admin/AdminDashboardPage';
 import AddUserPage    from './pages/admin/AddUserPage';
@@ -15,6 +15,9 @@ import AssociationsPage      from './pages/admin/AssociationsPage';
 import LogsPage              from './pages/admin/LogsPage';
 import NewAssociationPage from './pages/admin/NewAssociationPage';
 import ReportsPage from './pages/admin/ReportsPage';
+import ActiveAlertsPage from './pages/admin/ActiveAlertsPage';
+import { mustChangePassword } from './utils/auth';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 export default function App() {
   return (
     <BrowserRouter>
@@ -71,7 +74,23 @@ export default function App() {
         <ReportsPage />
       </PrivateRoute>
     }/>
+    <Route path="/admin/alerts" element={
+      <PrivateRoute requiredRole="ADMIN">
+        <ActiveAlertsPage />
+      </PrivateRoute>
+    }/>
+<Route path="/profile" element={
+        <PrivateRoute>
+          <ProfilePage />
+        </PrivateRoute>
+      }/>
+  <Route path="/change-password" element={
+    <PrivateRoute>
+      <ChangePasswordPage />
+    </PrivateRoute>
+  }/>
       </Routes>
+
     </BrowserRouter>
   );
 }

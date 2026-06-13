@@ -35,21 +35,20 @@ public class AdminAssociationService {
         // Vérifier que les deux utilisateurs existent
         if (!userRepository.existsById(request.getMalvoyantId())) {
             throw new ResourceNotFoundException(
-                    "Malvoyant introuvable : "
+                    "Visually impaired user not found: "
                             + request.getMalvoyantId());
         }
         if (!userRepository.existsById(request.getAccompagnateurId())) {
             throw new ResourceNotFoundException(
-                    "Accompagnateur introuvable : "
+                    "Companion not found: "
                             + request.getAccompagnateurId());
         }
 
-        // Vérifier qu'une association identique n'existe pas déjà
         if (associationRepository.existsByMalvoyantIdAndAccompagnateurId(
                 request.getMalvoyantId(),
                 request.getAccompagnateurId())) {
             throw new IllegalStateException(
-                    "Cette association existe déjà");
+                    "This association already exists");
         }
 
         Association assoc = new Association();
@@ -67,7 +66,7 @@ public class AdminAssociationService {
     public void deleteAssociation(Long id) {
         if (!associationRepository.existsById(id)) {
             throw new ResourceNotFoundException(
-                    "Association introuvable : " + id);
+                    "Association not found: " + id);
         }
         associationRepository.deleteById(id);
         log.info("[ADMIN] Association supprimée : id={}", id);

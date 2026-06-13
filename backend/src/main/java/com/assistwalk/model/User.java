@@ -3,7 +3,7 @@ package com.assistwalk.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,7 +25,6 @@ public class User {
     @Column(nullable = false)
     private String role;
 
-    // Champs ajoutés par la migration V3__enrich_schema.sql
     private String nom;
     private String prenom;
     private String telephone;
@@ -33,6 +32,17 @@ public class User {
 
     @Column(name = "derniere_connexion")
     private LocalDateTime derniereConnexion;
+
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword = true;
+    // ─────────────────────────────────────────────────────────
 
     @OneToOne(mappedBy = "user",
             fetch = FetchType.LAZY,
