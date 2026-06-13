@@ -1,6 +1,8 @@
 class ServerConfig {
-  // IP du PC où Spring Boot et Flask sont lancés
-  static const String pcIp = '192.168.1.6';
+  // IP du PC Spring Boot
+  static const String pcIp = '100.91.177.99';
+  // Flask
+  static const String pcIpf = '100.91.177.163';
 
   // Backend Spring Boot
   static const String springPort = '8081';
@@ -10,8 +12,8 @@ class ServerConfig {
 
   static String get springBaseUrl => 'http://$pcIp:$springPort';
 
-  static String get flaskBaseUrl => 'http://$pcIp:$flaskPort';
+  static String get flaskBaseUrl => 'http://$pcIpf:$flaskPort';
 
   // 🔥 OCR
-  static String get ocrBaseUrl => "http://$pcIp:8000";
+  static String get ocrBaseUrl => "http://$pcIpf:8000";
 }

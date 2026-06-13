@@ -64,3 +64,7 @@ backend/src/main/resources/firebase-service-account.json
 # ================================
 .DS_Store
 Thumbs.db
+
+.vite/
+node_modules/
+dist/
