@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AddUserPage.jsx — AssistWalk Admin
  * Premium enterprise healthcare design
  */
@@ -177,13 +177,57 @@ function Sel({ hasError=false, empty=false, children, ...props }) {
   );
 }
 
+// ── Shared form style helpers ──────────────────────────────────
+const tallInput = { height:52, borderRadius:14 };
+const iconLeft  = { position:'absolute', left:13, top:'50%', transform:'translateY(-50%)',
+                     pointerEvents:'none', color:'#9ca3af' };
+const eyeBtn    = { position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
+                     background:'none', border:'none', cursor:'pointer', color:'#9ca3af',
+                     display:'flex', padding:0 };
+const subLabel  = { fontSize:11, fontWeight:700, color:'#6b7280', margin:'0 0 8px',
+                     textTransform:'uppercase', letterSpacing:'0.06em' };
+
+// ── Option card (compact toggle / info card) ───────────────────
+function OptionCard({ checked, locked, title, subtitle, onClick }) {
+  return (
+    <div onClick={!locked ? onClick : undefined} style={{
+      display:'flex', alignItems:'flex-start', gap:10,
+      padding:'12px 14px', borderRadius:14,
+      cursor: locked ? 'default' : 'pointer',
+      background: checked ? '#eff6ff' : '#f9fafb',
+      border:`1.5px solid ${checked ? '#bfdbfe' : '#e5e7eb'}`,
+      transition:'all 0.15s',
+    }}>
+      <div style={{
+        width:18, height:18, borderRadius:5, flexShrink:0, marginTop:1,
+        background: checked ? '#2563eb' : '#fff',
+        border:`2px solid ${checked ? '#2563eb' : '#d1d5db'}`,
+        display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
+      }}>
+        {checked && <IcCheck/>}
+      </div>
+      <div style={{minWidth:0}}>
+        <p style={{fontSize:12,fontWeight:600,color:'#374151',margin:0}}>{title}</p>
+        <p style={{fontSize:10.5,color:'#9ca3af',margin:'2px 0 0',lineHeight:1.35}}>{subtitle}</p>
+        {locked && (
+          <span style={{
+            display:'inline-block', marginTop:4, fontSize:9.5, fontWeight:700,
+            color:'#2563eb', background:'#dbeafe', borderRadius:5, padding:'1px 6px',
+            letterSpacing:'0.04em', textTransform:'uppercase',
+          }}>Automatic</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Card ──────────────────────────────────────────────────────
 function Card({ title, sub, iconColor, iconBg, Icon, children, compact=false }) {
   return (
     <div style={{
-      background:'#fff', borderRadius:14, border:'1px solid #e5e7eb',
+      background:'#fff', borderRadius:20, border:'1px solid #e5e7eb',
       boxShadow:'0 1px 4px rgba(0,0,0,0.04)',
-      padding: compact ? '16px 18px' : '18px 20px',
+      padding: compact ? '16px 18px' : '20px 24px',
     }}>
       {(title || Icon) && (
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14,
@@ -300,12 +344,9 @@ export default function AddUserPage() {
     const e = {};
     if (!form.email) e.email = 'Email is required';
     if (!form.role)  e.role  = 'Role is required';
-    if (!editing) {
-      if (!form.password)              e.password   = 'Password is required';
-      else if (form.password.length<8) e.password   = 'Minimum 8 characters';
+    if (editing && form.password) {
+      if (form.password.length<8) e.password = 'Minimum 8 characters';
       if (form.password !== form.confirmPwd) e.confirmPwd = 'Passwords do not match';
-    } else if (form.password && form.password !== form.confirmPwd) {
-      e.confirmPwd = 'Passwords do not match';
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -324,7 +365,17 @@ export default function AddUserPage() {
         telephone: form.telephone || null,
         adresse:   form.adresse   || null,
       };
-      if (!editing || form.password) payload.password = form.password;
+      if (editing && form.password) payload.password = form.password;
+      if (!editing && form.role === 'VISUAL_IMPAIRED') {
+        payload.telephoneUrgence = form.telephoneUrgence || null;
+        payload.groupeSanguin    = form.groupeSanguin    || null;
+        payload.niveauDeficience = form.niveauDeficience || null;
+      }
+      if (!editing && form.role === 'COMPANION') {
+        payload.telephoneProfessionnel = form.telephoneProfessionnel || null;
+        payload.dateEmbauche           = form.dateEmbauche           || null;
+        payload.anneesExperience       = form.anneesExperience ? Number(form.anneesExperience) : null;
+      }
       if (editing) await api.put('/api/v1/admin/users/' + editUser.id, payload);
       else         await api.post('/api/v1/admin/users', payload);
       toast.success(editing ? 'User updated.' : 'User created.');
@@ -335,6 +386,7 @@ export default function AddUserPage() {
   };
 
   const roleConf = ROLE_CONFIG[form.role];
+  const showRoleDetails = form.role === 'VISUAL_IMPAIRED' || form.role === 'COMPANION';
 
   return (
     <div style={{
@@ -427,389 +479,291 @@ export default function AddUserPage() {
         </header>
 
         {/* ── MAIN ── */}
-        <main style={{flex:1, overflowY:'auto', padding:'20px 24px 80px'}}>
-          <div style={{maxWidth:1200,margin:'0 auto'}}>
+        <main style={{flex:1, overflowY:'auto', padding:'16px 24px 20px'}}>
+          <div style={{maxWidth:1280,margin:'0 auto'}}>
 
             {/* Page title */}
-            <div style={{marginBottom:20}}>
+            <div style={{marginBottom:14}}>
               <button onClick={() => navigate('/admin/users')} style={{
                 display:'flex',alignItems:'center',gap:6,background:'none',border:'none',
-                cursor:'pointer',color:'#6b7280',fontSize:12,fontWeight:500,padding:0,marginBottom:10,
+                cursor:'pointer',color:'#6b7280',fontSize:12,fontWeight:500,padding:0,marginBottom:6,
               }}
                 onMouseEnter={e=>e.currentTarget.style.color='#374151'}
                 onMouseLeave={e=>e.currentTarget.style.color='#6b7280'}>
                 <IcBack/> Back to Users
               </button>
-              <h1 style={{fontSize:20,fontWeight:800,color:'#111827',margin:'0 0 2px',letterSpacing:'-0.4px'}}>
+              <h1 style={{fontSize:19,fontWeight:800,color:'#111827',margin:0,letterSpacing:'-0.4px'}}>
                 {editing ? 'Edit User' : 'Add New User'}
               </h1>
-              <p style={{fontSize:13,color:'#6b7280',margin:0}}>
+              <p style={{fontSize:12,color:'#6b7280',margin:'2px 0 0'}}>
                 {editing ? 'Update account details and permissions.' : 'Create a new AssistWalk account.'}
               </p>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 320px',gap:16,alignItems:'start'}}>
+              <div style={{display:'grid',gridTemplateColumns:'7fr 3fr',gap:24,alignItems:'start'}}>
 
-                {/* ══ LEFT ══ */}
-                <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                {/* ══ LEFT: User Information + Security ══ */}
+                <Card Icon={IcUser} iconBg="#eff6ff" iconColor="#2563eb"
+                  title="User Information" sub="Basic profile details & account security">
+                  <div style={{display:'flex',flexDirection:'column',gap:14}}>
 
-                  {/* User Information */}
-                  <Card Icon={IcUser} iconBg="#eff6ff" iconColor="#2563eb"
-                    title="User Information" sub="Basic profile details">
-                    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                    {/* Row 1: Name */}
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                      <Field label="First Name">
+                        <Inp value={form.prenom} placeholder="First name" style={tallInput}
+                          onChange={e => set('prenom', e.target.value)}/>
+                      </Field>
+                      <Field label="Last Name">
+                        <Inp value={form.nom} placeholder="Last name" style={tallInput}
+                          onChange={e => set('nom', e.target.value)}/>
+                      </Field>
+                    </div>
 
-                      {/* Name row */}
-                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                        <Field label="First Name">
-                          <Inp value={form.prenom} placeholder="First name"
-                            onChange={e => set('prenom', e.target.value)}/>
-                        </Field>
-                        <Field label="Last Name">
-                          <Inp value={form.nom} placeholder="Last name"
-                            onChange={e => set('nom', e.target.value)}/>
-                        </Field>
-                      </div>
-
-                      {/* Email + Phone row */}
-                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                        <Field label="Email Address" required error={errors.email}>
-                          <div style={{position:'relative'}}>
-                            <span style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',
-                                          pointerEvents:'none',color:'#9ca3af'}}><IcMail/></span>
-                            <Inp type="email" value={form.email} placeholder="user@example.com"
-                              hasError={!!errors.email} style={{paddingLeft:34}}
-                              onChange={e => set('email', e.target.value)}/>
-                          </div>
-                        </Field>
-                        <Field label="Phone Number">
-                          <div style={{display:'flex',gap:7}}>
-                            <div style={{
-                              display:'flex',alignItems:'center',gap:5,flexShrink:0,
-                              padding:'9px 10px',border:'1.5px solid #e5e7eb',
-                              borderRadius:9,background:'#f9fafb',
-                            }}>
-                              <svg viewBox="0 0 20 14" style={{width:20,height:14,borderRadius:2,flexShrink:0,display:'block'}}>
-                                <rect width="20" height="14" fill="#C1272D"/>
-                                {/* Moroccan green pentagram — center (10,7) */}
-                                <polygon
-                                  points="10,4 10.68,6.07 12.85,6.07 11.09,7.36 11.76,9.43 10,8.15 8.24,9.43 8.91,7.36 7.15,6.07 9.32,6.07"
-                                  fill="#006233" fillRule="evenodd"
-                                />
-                              </svg>
-                              <span style={{fontSize:12,color:'#374151',fontWeight:600,whiteSpace:'nowrap'}}>+212</span>
-                            </div>
-                            <div style={{position:'relative',flex:1}}>
-                              <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',
-                                            pointerEvents:'none',color:'#9ca3af'}}><IcPhone/></span>
-                              <Inp value={form.telephone} placeholder="6xx xxx xxx"
-                                style={{paddingLeft:30}}
-                                onChange={e => set('telephone', e.target.value)}/>
-                            </div>
-                          </div>
-                        </Field>
-                      </div>
-
-                      {/* Address */}
-                      <Field label="Address">
+                    {/* Row 2: Email + Phone */}
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                      <Field label="Email Address" required error={errors.email}>
                         <div style={{position:'relative'}}>
-                          <span style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',
-                                        pointerEvents:'none',color:'#9ca3af'}}><IcMapPin/></span>
-                          <Inp value={form.adresse} placeholder="City, Street (optional)"
-                            style={{paddingLeft:34}}
-                            onChange={e => set('adresse', e.target.value)}/>
+                          <span style={iconLeft}><IcMail/></span>
+                          <Inp type="email" value={form.email} placeholder="user@example.com"
+                            hasError={!!errors.email} style={{...tallInput,paddingLeft:38}}
+                            onChange={e => set('email', e.target.value)}/>
+                        </div>
+                      </Field>
+                      <Field label="Phone Number">
+                        <div style={{display:'flex',gap:8}}>
+                          <div style={{
+                            display:'flex',alignItems:'center',gap:5,flexShrink:0,
+                            padding:'0 10px',border:'1.5px solid #e5e7eb',
+                            borderRadius:14,background:'#f9fafb',height:52,
+                          }}>
+                            <svg viewBox="0 0 20 14" style={{width:20,height:14,borderRadius:2,flexShrink:0,display:'block'}}>
+                              <rect width="20" height="14" fill="#C1272D"/>
+                              {/* Moroccan green pentagram — center (10,7) */}
+                              <polygon
+                                points="10,4 10.68,6.07 12.85,6.07 11.09,7.36 11.76,9.43 10,8.15 8.24,9.43 8.91,7.36 7.15,6.07 9.32,6.07"
+                                fill="#006233" fillRule="evenodd"
+                              />
+                            </svg>
+                            <span style={{fontSize:12,color:'#374151',fontWeight:600,whiteSpace:'nowrap'}}>+212</span>
+                          </div>
+                          <div style={{position:'relative',flex:1}}>
+                            <span style={iconLeft}><IcPhone/></span>
+                            <Inp value={form.telephone} placeholder="6xx xxx xxx" style={{...tallInput,paddingLeft:34}}
+                              onChange={e => set('telephone', e.target.value)}/>
+                          </div>
                         </div>
                       </Field>
                     </div>
-                  </Card>
 
-                  {/* Security Settings */}
-                  <Card Icon={IcShield} iconBg="#f0fdf4" iconColor="#16a34a"
-                    title="Security Settings" sub="Account credentials">
-                    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                    {/* Row 3: Address */}
+                    <Field label="Address">
+                      <div style={{position:'relative'}}>
+                        <span style={iconLeft}><IcMapPin/></span>
+                        <Inp value={form.adresse} placeholder="City, Street (optional)" style={{...tallInput,paddingLeft:38}}
+                          onChange={e => set('adresse', e.target.value)}/>
+                      </div>
+                    </Field>
+
+                    {/* Security Settings */}
+                    <div>
+                      <p style={subLabel}>Security Settings</p>
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                        <OptionCard checked locked
+                          title="Temporary password"
+                          subtitle="Generated automatically and emailed to the user"/>
+                        <OptionCard checked={form.mustChangePassword}
+                          onClick={() => set('mustChangePassword', !form.mustChangePassword)}
+                          title="Require password change"
+                          subtitle="User must set a new password at first login"/>
+                      </div>
+                    </div>
 
-                        {/* Password */}
-                        <Field label={editing ? 'New Password' : 'Temporary Password'}
-                          required={!editing} error={errors.password}
-                          hint={editing ? 'Leave blank to keep current' : 'Min. 8 characters'}>
+                    {/* Edit mode: reset password */}
+                    {editing && (
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                        <Field label="New Password" error={errors.password} hint="Leave blank to keep current">
                           <div style={{position:'relative'}}>
-                            <span style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',
-                                          pointerEvents:'none',color:'#9ca3af'}}><IcLock/></span>
+                            <span style={iconLeft}><IcLock/></span>
                             <Inp type={showPwd?'text':'password'} value={form.password}
                               hasError={!!errors.password}
-                              placeholder={editing?'New password (optional)':'Enter password'}
-                              style={{paddingLeft:34,paddingRight:38}}
+                              placeholder="New password (optional)"
+                              style={{...tallInput,paddingLeft:38,paddingRight:42}}
                               onChange={e => set('password', e.target.value)}/>
-                            <button type="button" onClick={() => setShowPwd(v=>!v)} style={{
-                              position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
-                              background:'none',border:'none',cursor:'pointer',
-                              color:'#9ca3af',display:'flex',padding:0,
-                            }}>
+                            <button type="button" onClick={() => setShowPwd(v=>!v)} style={eyeBtn}>
                               {showPwd ? <IcEyeOff/> : <IcEye/>}
                             </button>
                           </div>
                         </Field>
-
-                        {/* Confirm */}
-                        <Field label="Confirm Password"
-                          required={!editing && !!form.password} error={errors.confirmPwd}>
+                        <Field label="Confirm Password" required={!!form.password} error={errors.confirmPwd}>
                           <div style={{position:'relative'}}>
-                            <span style={{position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',
-                                          pointerEvents:'none',color:'#9ca3af'}}><IcLock/></span>
+                            <span style={iconLeft}><IcLock/></span>
                             <Inp type={showCPwd?'text':'password'} value={form.confirmPwd}
                               hasError={!!errors.confirmPwd}
                               placeholder="Confirm password"
-                              style={{paddingLeft:34,paddingRight:38}}
+                              style={{...tallInput,paddingLeft:38,paddingRight:42}}
                               onChange={e => set('confirmPwd', e.target.value)}/>
-                            <button type="button" onClick={() => setShowCPwd(v=>!v)} style={{
-                              position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
-                              background:'none',border:'none',cursor:'pointer',
-                              color:'#9ca3af',display:'flex',padding:0,
-                            }}>
+                            <button type="button" onClick={() => setShowCPwd(v=>!v)} style={eyeBtn}>
                               {showCPwd ? <IcEyeOff/> : <IcEye/>}
                             </button>
                           </div>
                         </Field>
                       </div>
+                    )}
+                  </div>
+                </Card>
 
-                      {/* Must change password checkbox */}
-                      <label style={{
-                        display:'flex',alignItems:'center',gap:10,cursor:'pointer',
-                        padding:'10px 12px',borderRadius:9,
-                        background: form.mustChangePassword?'#eff6ff':'#f9fafb',
-                        border:`1.5px solid ${form.mustChangePassword?'#bfdbfe':'#e5e7eb'}`,
-                        transition:'all 0.15s',
-                      }}>
-                        <div onClick={() => set('mustChangePassword', !form.mustChangePassword)}
-                          style={{
-                            width:18,height:18,borderRadius:5,flexShrink:0,
-                            background: form.mustChangePassword?'#2563eb':'#fff',
-                            border: `2px solid ${form.mustChangePassword?'#2563eb':'#d1d5db'}`,
-                            display:'flex',alignItems:'center',justifyContent:'center',
-                            transition:'all 0.15s',cursor:'pointer',
-                          }}>
-                          {form.mustChangePassword && (
-                            <svg viewBox="0 0 12 12" fill="none" style={{width:10,height:10}}
-                                 stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
-                              <polyline points="1,6 4.5,9.5 11,2"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <p style={{fontSize:12,fontWeight:600,color:'#374151',margin:0}}>
-                            Must change password at first login
-                          </p>
-                          <p style={{fontSize:11,color:'#9ca3af',margin:0}}>
-                            User will be prompted to set a new password
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-                  </Card>
+                {/* ══ RIGHT: Account Configuration ══ */}
+                <Card Icon={IcShield} iconBg="#f5f3ff" iconColor="#7c3aed"
+                  title="Account Configuration" sub="Role and access">
+                  <div style={{display:'flex',flexDirection:'column',gap:14}}>
 
-                  {/* VISUAL_IMPAIRED details */}
-                  {form.role === 'VISUAL_IMPAIRED' && (
-                    <Card Icon={() => (
-                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16}}
-                           stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
-                    )} iconBg="#f5f3ff" iconColor="#7c3aed"
-                    title="Medical Details" sub="Impairment and emergency information">
-                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
-                        <Field label="Emergency Phone">
-                          <div style={{position:'relative'}}>
-                            <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',
-                                          pointerEvents:'none',color:'#9ca3af'}}><IcPhone/></span>
-                            <Inp value={form.telephoneUrgence} placeholder="+212 6xx xxx xxx"
-                              style={{paddingLeft:30}}
-                              onChange={e => set('telephoneUrgence', e.target.value)}/>
-                          </div>
-                        </Field>
-                        <Field label="Blood Type">
-                          <Sel empty={!form.groupeSanguin} value={form.groupeSanguin}
-                            onChange={e => set('groupeSanguin', e.target.value)}>
-                            <option value="">Select</option>
-                            {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => (
-                              <option key={g} value={g}>{g}</option>
-                            ))}
-                          </Sel>
-                        </Field>
-                        <Field label="Impairment Level">
-                          <Sel empty={!form.niveauDeficience} value={form.niveauDeficience}
-                            onChange={e => set('niveauDeficience', e.target.value)}>
-                            <option value="">Select</option>
-                            <option value="partial">Partial</option>
-                            <option value="severe">Severe</option>
-                            <option value="total">Total (blind)</option>
-                          </Sel>
-                        </Field>
-                      </div>
-                    </Card>
-                  )}
+                    {/* Role */}
+                    <Field label="Role" required error={errors.role}>
+                      <Sel empty={!form.role} hasError={!!errors.role}
+                        value={form.role} onChange={e => set('role', e.target.value)}
+                        style={{height:48,borderRadius:12}}>
+                        <option value="">Select role…</option>
+                        <option value="VISUAL_IMPAIRED">Visually Impaired</option>
+                        <option value="COMPANION">Companion</option>
+                        <option value="ADMIN">Administrator</option>
+                      </Sel>
+                    </Field>
 
-                  {/* COMPANION details */}
-                  {form.role === 'COMPANION' && (
-                    <Card Icon={() => (
-                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16}}
-                           stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 010 7.75"/>
-                      </svg>
-                    )} iconBg="#eff6ff" iconColor="#2563eb"
-                    title="Professional Details" sub="Companion professional information">
-                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
-                        <Field label="Professional Phone">
-                          <div style={{position:'relative'}}>
-                            <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',
-                                          pointerEvents:'none',color:'#9ca3af'}}><IcPhone/></span>
-                            <Inp value={form.telephoneProfessionnel} placeholder="+212 6xx"
-                              style={{paddingLeft:30}}
-                              onChange={e => set('telephoneProfessionnel', e.target.value)}/>
-                          </div>
-                        </Field>
-                        <Field label="Hire Date">
-                          <Inp type="date" value={form.dateEmbauche}
-                            onChange={e => set('dateEmbauche', e.target.value)}/>
-                        </Field>
-                        <Field label="Years of Experience">
-                          <Inp type="number" min="0" max="50" value={form.anneesExperience}
-                            placeholder="e.g. 3"
-                            onChange={e => set('anneesExperience', e.target.value)}/>
-                        </Field>
-                      </div>
-                    </Card>
-                  )}
-                </div>
-
-                {/* ══ RIGHT ══ */}
-                <div style={{display:'flex',flexDirection:'column',gap:14}}>
-
-                  {/* Account Configuration */}
-                  <Card Icon={IcShield} iconBg="#f5f3ff" iconColor="#7c3aed"
-                    title="Account Configuration" sub="Role and access">
-                    <div style={{display:'flex',flexDirection:'column',gap:14}}>
-
-                      {/* Role selector */}
-                      <Field label="Role" required error={errors.role}>
-                        <Sel empty={!form.role} hasError={!!errors.role}
-                          value={form.role} onChange={e => set('role', e.target.value)}>
-                          <option value="">Select role…</option>
-                          <option value="VISUAL_IMPAIRED">Visually Impaired</option>
-                          <option value="COMPANION">Companion</option>
-                          <option value="ADMIN">Administrator</option>
-                        </Sel>
-                      </Field>
-
-                      {/* Role description pill */}
-                      {roleConf && (
-                        <div style={{
-                          padding:'10px 12px',borderRadius:9,
-                          background:roleConf.bg,border:`1px solid ${roleConf.border}`,
-                        }}>
-                          <p style={{fontSize:11,fontWeight:700,color:roleConf.color,margin:'0 0 2px'}}>
-                            {roleConf.label}
-                          </p>
-                          <p style={{fontSize:11,color:'#6b7280',margin:0,lineHeight:1.4}}>
-                            {roleConf.desc}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Status */}
-                      <div>
-                        <p style={{fontSize:12,fontWeight:600,color:'#374151',margin:'0 0 8px'}}>Status</p>
-                        <div style={{display:'flex',gap:8}}>
-                          {[
-                            {val:true,  label:'Active',   color:'#15803d', bg:'#f0fdf4', brd:'#bbf7d0'},
-                            {val:false, label:'Inactive',  color:'#6b7280', bg:'#f9fafb', brd:'#e5e7eb'},
-                          ].map(opt => (
-                            <button key={String(opt.val)} type="button"
-                              onClick={() => set('active', opt.val)}
-                              style={{
-                                flex:1,padding:'8px 10px',borderRadius:9,cursor:'pointer',
-                                border:`1.5px solid ${form.active===opt.val?opt.brd:'#e5e7eb'}`,
-                                background:form.active===opt.val?opt.bg:'#fff',
-                                display:'flex',alignItems:'center',justifyContent:'center',gap:6,
-                                transition:'all 0.15s',
-                              }}>
-                              <span style={{width:7,height:7,borderRadius:'50%',
-                                            background:form.active===opt.val?opt.color:'#d1d5db',flexShrink:0}}/>
-                              <span style={{fontSize:12,fontWeight:600,
-                                            color:form.active===opt.val?opt.color:'#6b7280'}}>
-                                {opt.label}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Companion assignment — only for VI */}
-                      {form.role === 'VISUAL_IMPAIRED' && (
-                        <Field label="Assign Companion"
-                          hint="Link a companion to monitor this user.">
-                          <Sel empty={!form.companionId} value={form.companionId}
-                            onChange={e => set('companionId', e.target.value)}>
-                            <option value="">No companion (optional)</option>
-                            {companions.map(c => (
-                              <option key={c.id} value={c.id}>{displayName(c)}</option>
-                            ))}
-                          </Sel>
-                        </Field>
-                      )}
-                    </div>
-                  </Card>
-
-                  {/* Permissions */}
-                  <Card compact>
-                    <p style={{fontSize:11,fontWeight:700,color:'#6b7280',margin:'0 0 10px',
-                               textTransform:'uppercase',letterSpacing:'0.07em'}}>
-                      {roleConf ? 'Role Permissions' : 'Permissions'}
-                    </p>
-                    {roleConf ? (
-                      <div style={{display:'flex',flexDirection:'column',gap:6}}>
-                        {roleConf.perms.map((p, i) => (
-                          <div key={i} style={{
-                            display:'flex',alignItems:'center',gap:8,
-                            padding:'7px 10px',borderRadius:7,
-                            background: roleConf.bg, border:`1px solid ${roleConf.border}`,
-                          }}>
-                            <span style={{
-                              width:16,height:16,borderRadius:'50%',flexShrink:0,
-                              background:roleConf.color,
-                              display:'flex',alignItems:'center',justifyContent:'center',
+                    {/* Status segmented control */}
+                    <div>
+                      <p style={subLabel}>Status</p>
+                      <div style={{display:'flex',gap:4,padding:4,background:'#f3f4f6',borderRadius:12}}>
+                        {[
+                          {val:true,  label:'Active',   color:'#15803d'},
+                          {val:false, label:'Inactive', color:'#6b7280'},
+                        ].map(opt => (
+                          <button key={String(opt.val)} type="button"
+                            onClick={() => set('active', opt.val)}
+                            style={{
+                              flex:1,padding:'8px 10px',borderRadius:9,cursor:'pointer',border:'none',
+                              background:form.active===opt.val?'#fff':'transparent',
+                              boxShadow:form.active===opt.val?'0 1px 4px rgba(0,0,0,0.08)':'none',
+                              display:'flex',alignItems:'center',justifyContent:'center',gap:6,
+                              transition:'all 0.15s',
                             }}>
-                              <IcCheck/>
+                            <span style={{width:7,height:7,borderRadius:'50%',
+                              background:form.active===opt.val?opt.color:'#d1d5db',flexShrink:0}}/>
+                            <span style={{fontSize:12,fontWeight:600,
+                              color:form.active===opt.val?opt.color:'#9ca3af'}}>
+                              {opt.label}
                             </span>
-                            <span style={{fontSize:12,fontWeight:500,color:'#374151'}}>{p}</span>
-                          </div>
+                          </button>
                         ))}
                       </div>
-                    ) : (
-                      <div style={{
-                        padding:'18px 0',textAlign:'center',
-                        color:'#9ca3af',fontSize:12,
-                      }}>
-                        Select a role to view permissions
-                      </div>
-                    )}
-                  </Card>
-                </div>
+                    </div>
+
+                    {/* Permissions preview */}
+                    <div>
+                      <p style={subLabel}>Permissions Preview</p>
+                      {roleConf ? (
+                        <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                          <div style={{display:'inline-flex',alignSelf:'flex-start',alignItems:'center',gap:6,
+                            padding:'3px 10px',borderRadius:999,background:roleConf.bg,
+                            border:`1px solid ${roleConf.border}`,marginBottom:2}}>
+                            <span style={{width:6,height:6,borderRadius:'50%',background:roleConf.color}}/>
+                            <span style={{fontSize:11,fontWeight:700,color:roleConf.color}}>{roleConf.label}</span>
+                          </div>
+                          {roleConf.perms.map((p,i) => (
+                            <div key={i} style={{display:'flex',alignItems:'center',gap:8,
+                              padding:'6px 9px',borderRadius:8,background:roleConf.bg,border:`1px solid ${roleConf.border}`}}>
+                              <span style={{width:15,height:15,borderRadius:'50%',flexShrink:0,
+                                background:roleConf.color,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>
+                                <IcCheck/>
+                              </span>
+                              <span style={{fontSize:11.5,fontWeight:500,color:'#374151'}}>{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{padding:'14px 0',textAlign:'center',color:'#9ca3af',fontSize:11.5}}>
+                          Select a role to preview permissions
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Role Details (conditional, animated) */}
+                    <div style={{
+                      maxHeight: showRoleDetails ? 220 : 0,
+                      opacity:   showRoleDetails ? 1 : 0,
+                      overflow:'hidden', transition:'max-height 0.35s ease, opacity 0.25s ease',
+                    }}>
+                      <p style={subLabel}>Role Details</p>
+
+                      {form.role === 'VISUAL_IMPAIRED' && (
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                          <Field label="Emergency Phone">
+                            <Inp value={form.telephoneUrgence} placeholder="+212 6xx xxx xxx"
+                              onChange={e => set('telephoneUrgence', e.target.value)}/>
+                          </Field>
+                          <Field label="Blood Type">
+                            <Sel empty={!form.groupeSanguin} value={form.groupeSanguin}
+                              onChange={e => set('groupeSanguin', e.target.value)}>
+                              <option value="">Select</option>
+                              {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => (
+                                <option key={g} value={g}>{g}</option>
+                              ))}
+                            </Sel>
+                          </Field>
+                          <Field label="Impairment Level">
+                            <Sel empty={!form.niveauDeficience} value={form.niveauDeficience}
+                              onChange={e => set('niveauDeficience', e.target.value)}>
+                              <option value="">Select</option>
+                              <option value="partial">Partial</option>
+                              <option value="severe">Severe</option>
+                              <option value="total">Total (blind)</option>
+                            </Sel>
+                          </Field>
+                          <Field label="Assigned Companion">
+                            <Sel empty={!form.companionId} value={form.companionId}
+                              onChange={e => set('companionId', e.target.value)}>
+                              <option value="">No companion</option>
+                              {companions.map(c => (
+                                <option key={c.id} value={c.id}>{displayName(c)}</option>
+                              ))}
+                            </Sel>
+                          </Field>
+                        </div>
+                      )}
+
+                      {form.role === 'COMPANION' && (
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                          <Field label="Professional Phone">
+                            <Inp value={form.telephoneProfessionnel} placeholder="+212 6xx"
+                              onChange={e => set('telephoneProfessionnel', e.target.value)}/>
+                          </Field>
+                          <Field label="Hire Date">
+                            <Inp type="date" value={form.dateEmbauche}
+                              onChange={e => set('dateEmbauche', e.target.value)}/>
+                          </Field>
+                          <div style={{gridColumn:'1 / -1'}}>
+                            <Field label="Years of Experience">
+                              <Inp type="number" min="0" max="50" value={form.anneesExperience}
+                                placeholder="e.g. 3"
+                                onChange={e => set('anneesExperience', e.target.value)}/>
+                            </Field>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
               </div>
 
-              {/* ── STICKY FOOTER ── */}
+              {/* ── STICKY ACTION BAR ── */}
               <div style={{
                 position:'sticky',bottom:0,marginTop:16,
                 background:'rgba(248,250,252,0.97)',backdropFilter:'blur(8px)',
                 borderTop:'1px solid #e5e7eb',padding:'12px 0',
-                display:'flex',alignItems:'center',justifyContent:'space-between',
+                display:'flex',alignItems:'center',justifyContent:'flex-end',gap:10,
               }}>
                 <button type="button" onClick={() => navigate('/admin/users')} style={{
-                  padding:'9px 20px',borderRadius:9,border:'1px solid #e5e7eb',
+                  padding:'10px 22px',borderRadius:12,border:'1.5px solid #e5e7eb',
                   background:'#fff',cursor:'pointer',fontSize:13,fontWeight:600,color:'#374151',
                 }}
                   onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
@@ -818,13 +772,14 @@ export default function AddUserPage() {
                 </button>
                 <button type="submit" disabled={saving} style={{
                   display:'flex',alignItems:'center',gap:8,
-                  padding:'9px 24px',borderRadius:9,border:'none',
-                  background:saving?'#93c5fd':'#2563eb',color:'#fff',
+                  padding:'10px 26px',borderRadius:12,border:'none',
+                  background:saving?'#93c5fd':'linear-gradient(135deg,#2563eb,#1d4ed8)',color:'#fff',
                   cursor:saving?'not-allowed':'pointer',fontSize:13,fontWeight:700,
-                  boxShadow:'0 2px 10px rgba(37,99,235,0.25)',
+                  boxShadow:'0 4px 14px rgba(37,99,235,0.3)',
+                  transition:'opacity 0.15s',
                 }}
-                  onMouseEnter={e=>!saving&&(e.currentTarget.style.background='#1d4ed8')}
-                  onMouseLeave={e=>!saving&&(e.currentTarget.style.background='#2563eb')}>
+                  onMouseEnter={e=>!saving&&(e.currentTarget.style.opacity='0.9')}
+                  onMouseLeave={e=>!saving&&(e.currentTarget.style.opacity='1')}>
                   {saving ? <Spinner size={15} light/> : (editing ? <IcSave/> : <IcPlus/>)}
                   {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create User'}
                 </button>

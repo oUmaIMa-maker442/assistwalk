@@ -3,6 +3,8 @@ package com.assistwalk.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 public class UserProfileDto {
@@ -15,6 +17,8 @@ public class UserProfileDto {
     private String  role;
     private String  photoUrl;
     private boolean mustChangePassword; // ← manquait
+    private LocalDateTime createdAt;
+    private LocalDateTime derniereConnexion;
     // Malvoyant spécifique
     private String  telephoneUrgence;
     private String  groupeSanguin;

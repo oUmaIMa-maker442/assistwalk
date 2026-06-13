@@ -49,9 +49,12 @@ public class UserService {
                 .nom(user.getNom())
                 .prenom(user.getPrenom())
                 .telephone(user.getTelephone())
+                .adresse(user.getAdresse())
                 .role(user.getRole())
                 .photoUrl(user.getPhotoUrl())
-                .mustChangePassword(user.isMustChangePassword());
+                .mustChangePassword(user.isMustChangePassword())
+                .createdAt(user.getCreatedAt())
+                .derniereConnexion(user.getDerniereConnexion());
 
         if ("VISUAL_IMPAIRED".equals(user.getRole())) {
             Malvoyant m = malvoyantRepository.findById(user.getId()).orElse(null);

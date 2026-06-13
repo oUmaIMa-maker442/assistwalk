@@ -22,4 +22,14 @@ public class CreateUserRequest {
     private String prenom;
     private String telephone;
     private String adresse;
+
+    // Visually impaired specific
+    private String telephoneUrgence;
+    private String groupeSanguin;
+    private String niveauDeficience;
+
+    // Companion specific
+    private String  telephoneProfessionnel;
+    private String  dateEmbauche;        // ISO string yyyy-MM-dd
+    private Integer anneesExperience;
 }

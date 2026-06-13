@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.assistwalk.exception.ResourceNotFoundException;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -67,6 +68,26 @@ public class AdminUserService {
         user.setMustChangePassword(true);   // obligatoire au premier login
 
         User saved = userRepository.save(user);
+
+        // 2bis. Créer les données spécifiques au rôle
+        if ("VISUAL_IMPAIRED".equals(saved.getRole())) {
+            Malvoyant m = new Malvoyant();
+            m.setUser(saved);
+            m.setTelephoneUrgence(request.getTelephoneUrgence());
+            m.setGroupeSanguin(request.getGroupeSanguin());
+            m.setNiveauDeficience(request.getNiveauDeficience());
+            malvoyantRepository.save(m);
+        } else if ("COMPANION".equals(saved.getRole())) {
+            Accompagnateur a = new Accompagnateur();
+            a.setUser(saved);
+            a.setTelephoneProfessionnel(request.getTelephoneProfessionnel());
+            a.setAnneesExperience(request.getAnneesExperience());
+            if (request.getDateEmbauche() != null && !request.getDateEmbauche().isBlank()) {
+                try { a.setDateEmbauche(LocalDate.parse(request.getDateEmbauche())); }
+                catch (Exception ignored) {}
+            }
+            accompagnateurRepository.save(a);
+        }
 
         // 3. Envoyer l'email avec les identifiants
         emailService.sendWelcomeEmail(saved, tempPassword);
@@ -144,7 +165,9 @@ public class AdminUserService {
                 .adresse(user.getAdresse())
                 .role(user.getRole())
                 .photoUrl(user.getPhotoUrl())
-                .mustChangePassword(user.isMustChangePassword());
+                .mustChangePassword(user.isMustChangePassword())
+                .createdAt(user.getCreatedAt())
+                .derniereConnexion(user.getDerniereConnexion());
 
         if ("VISUAL_IMPAIRED".equals(user.getRole())) {
             Malvoyant m = malvoyantRepository.findById(user.getId()).orElse(null);
