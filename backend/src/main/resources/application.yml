@@ -1,10 +1,9 @@
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/assistwalk}
-    username: ${DB_USERNAME:assistwalk_user}
-    password: ${DB_PASSWORD:changeme}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
