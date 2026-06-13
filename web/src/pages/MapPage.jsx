@@ -452,7 +452,7 @@ export default function ActiveAlertsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data: alerts } = await api.get('/api/v1/alerts/active');
+        const { data: alerts } = await api.get('/api/v1/alerts/history');
         setAllAlerts(alerts);
         setLastRefresh(Date.now());
         alerts.forEach(a => geocodeAlert(a));

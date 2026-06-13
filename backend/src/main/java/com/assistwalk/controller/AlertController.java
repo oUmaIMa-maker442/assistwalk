@@ -85,6 +85,28 @@ public class AlertController {
     }
 
     /**
+     * GET /api/v1/alerts/history
+     * Retourne l'historique complet (toutes les alertes, tous statuts)
+     * des malvoyants associés à l'accompagnateur connecté.
+     * Accessible aux rôles COMPANION et ADMIN.
+     */
+    @GetMapping("/history")
+    @PreAuthorize("hasAnyAuthority('ROLE_COMPANION', 'ROLE_ADMIN')")
+    public ResponseEntity<List<AlertDto>> getAlertHistory(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        var user = userRepository
+                .findByEmail(userDetails.getUsername())
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found"));
+
+        List<AlertDto> alerts =
+                alertService.getAllAlertsForCompanion(user.getId());
+
+        return ResponseEntity.ok(alerts);
+    }
+
+    /**
      * PATCH /api/v1/alerts/{id}/resolve
      * Marque une alerte comme résolue.
      */

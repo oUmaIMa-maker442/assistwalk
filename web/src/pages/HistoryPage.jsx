@@ -421,7 +421,7 @@ export default function HistoryPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get('/api/v1/alerts/active');
+        const { data } = await api.get('/api/v1/alerts/history');
         setAllAlerts(data);
         setActiveCount(data.filter(a => a.status === 'ACTIVE').length);
         setLastRefresh(Date.now());

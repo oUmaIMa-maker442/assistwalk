@@ -117,6 +117,26 @@ public class AlertService {
     }
 
     /**
+     * Retourne l'historique complet (toutes les alertes, tous statuts)
+     * des malvoyants associés à l'accompagnateur donné.
+     */
+    public List<AlertDto> getAllAlertsForCompanion(Long companionId) {
+
+        List<Long> malvoyantIds = associationRepository
+                .findMalvoyantIdsByCompanionId(companionId);
+
+        if (malvoyantIds.isEmpty()) {
+            return List.of();
+        }
+
+        return alertRepository
+                .findAllByMalvoyantIds(malvoyantIds)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    /**
      * Marque une alerte comme résolue.
      * Vérifie que l'accompagnateur est bien associé au malvoyant
      * concerné par l'alerte.

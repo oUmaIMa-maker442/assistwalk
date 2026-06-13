@@ -25,4 +25,10 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     // Historique paginable (Phase 5)
     List<Alert> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    // Historique complet (toutes les alertes, tous statuts) pour les malvoyants d'un accompagnateur
+    @Query("SELECT a FROM Alert a " +
+            "WHERE a.userId IN :malvoyantIds " +
+            "ORDER BY a.createdAt DESC")
+    List<Alert> findAllByMalvoyantIds(@Param("malvoyantIds") List<Long> malvoyantIds);
 }
