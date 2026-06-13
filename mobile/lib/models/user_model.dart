@@ -51,6 +51,7 @@ class UserModel {
       telephoneUrgence: json['telephoneUrgence'] ?? 'Not specified',
       groupeSanguin: json['groupeSanguin'] ?? 'Not specified',
       niveauDeficience: json['niveauDeficience'] ?? 'Not specified',
+      photoUrl: json['photoUrl'],
     );
   }
 }

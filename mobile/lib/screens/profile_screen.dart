@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../widgets/app_gradient_background.dart';
 import '../core/app_colors.dart';
+import '../core/server_config.dart';
 import '../models/user_model.dart';
 import '../services/profile_service.dart';
 import '../services/voice_command_service.dart';
@@ -27,9 +31,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final FlutterTts _tts = FlutterTts();
 
 
+  final ImagePicker _imagePicker = ImagePicker();
+
   late Future<UserModel> _userFuture;
 
   bool _isLoggingOut = false;
+  bool _isUploadingPhoto = false;
 
   UserModel? _currentUser;
 
@@ -102,6 +109,115 @@ Visual impairment level ${user.niveauDeficience}.
     setState(() {
       _userFuture = _profileService.getCurrentUser();
     });
+  }
+
+  Future<void> _showPhotoOptions() async {
+    await _speak("Choose how to update your profile photo");
+
+    if (!mounted) return;
+
+    final hasPhoto = _currentUser?.photoUrl != null &&
+        _currentUser!.photoUrl!.isNotEmpty;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadPhoto(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadPhoto(ImageSource.gallery);
+              },
+            ),
+            if (hasPhoto)
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.sosRed,
+                ),
+                title: const Text(
+                  'Remove photo',
+                  style: TextStyle(color: AppColors.sosRed),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _removePhoto();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadPhoto(ImageSource source) async {
+    final pickedFile = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      imageQuality: 85,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() => _isUploadingPhoto = true);
+
+    try {
+      await _profileService.uploadPhoto(File(pickedFile.path));
+
+      await _refreshProfile();
+      await _speak("Profile photo updated");
+    } catch (e) {
+      await _speak("Failed to update profile photo");
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update profile photo'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    setState(() => _isUploadingPhoto = true);
+
+    try {
+      await _profileService.deletePhoto();
+
+      await _refreshProfile();
+      await _speak("Profile photo removed");
+    } catch (e) {
+      await _speak("Failed to remove profile photo");
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to remove profile photo'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
+    }
   }
 
   Future<void> _confirmLogout() async {
@@ -275,17 +391,68 @@ Visual impairment level ${user.niveauDeficience}.
 
                         const SizedBox(height: 24),
 
-                        const CircleAvatar(
-                          radius: 68,
-                          backgroundColor:
-                          AppColors.navigationSoft,
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
 
-                          child: Icon(
-                            Icons.person,
-                            size: 78,
-                            color:
-                            AppColors.primaryLight,
-                          ),
+                            CircleAvatar(
+                              radius: 68,
+                              backgroundColor:
+                              AppColors.navigationSoft,
+
+                              backgroundImage: (user.photoUrl != null &&
+                                  user.photoUrl!.isNotEmpty)
+                                  ? NetworkImage(
+                                '${ServerConfig.springBaseUrl}${user.photoUrl}',
+                              )
+                                  : null,
+
+                              child: (user.photoUrl == null ||
+                                  user.photoUrl!.isEmpty)
+                                  ? const Icon(
+                                Icons.person,
+                                size: 78,
+                                color:
+                                AppColors.primaryLight,
+                              )
+                                  : null,
+                            ),
+
+                            if (_isUploadingPhoto)
+                              const Positioned.fill(
+                                child: CircleAvatar(
+                                  radius: 68,
+                                  backgroundColor:
+                                  Colors.black38,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+
+                              child: GestureDetector(
+                                onTap: _isUploadingPhoto
+                                    ? null
+                                    : _showPhotoOptions,
+
+                                child: const CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor:
+                                  AppColors.primaryLight,
+
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    size: 20,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 18),
