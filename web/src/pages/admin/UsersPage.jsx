@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
-import api from '../../api/axiosInstance';
+import api, { API_BASE } from '../../api/axiosInstance';
 import { logout } from '../../utils/auth';
 import Sidebar from '../../components/Sidebar';
 import { useSidebarState } from '../../hooks/useSidebarState';
@@ -34,7 +34,6 @@ function initials(u) {
 const AV_COLORS = ['#2563eb','#7c3aed','#dc2626','#d97706','#16a34a','#0891b2','#db2777','#059669'];
 function avColor(id) { return AV_COLORS[(id || 0) % AV_COLORS.length]; }
 
-const API_BASE = 'http://localhost:8081';
 function resolvePhoto(url) {
   if (!url) return null;
   return url.startsWith('http') ? url : API_BASE + url;

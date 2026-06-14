@@ -1,12 +1,11 @@
 ﻿import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '../../api/axiosInstance';
+import api, { API_BASE } from '../../api/axiosInstance';
 import { logout } from '../../utils/auth';
 import Sidebar from '../../components/Sidebar';
 import { useSidebarState } from '../../hooks/useSidebarState';
 
-const API_BASE = 'http://localhost:8081';
 const COLORS = ['#2563eb','#7c3aed','#dc2626','#d97706','#16a34a','#0891b2','#db2777'];
 
 function avColor(id) { return COLORS[(id || 0) % COLORS.length]; }

@@ -4,13 +4,18 @@ services:
     container_name: assistwalk-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: assistwalk
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-assistwalk}
+      POSTGRES_USER: ${POSTGRES_USER:-assistwalk_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-assistwalk_user} -d ${POSTGRES_DB:-assistwalk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ocr-service:
     build:
@@ -23,5 +28,67 @@ services:
     env_file:
       - ../ocr/.env
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: assistwalk-backend
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-assistwalk}
+      DB_USERNAME: ${POSTGRES_USER:-assistwalk_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-insecure-change-in-prod}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-28800000}
+      JWT_EXPIRATION_REMEMBER_MS: ${JWT_EXPIRATION_REMEMBER_MS:-2592000000}
+      OCR_SERVICE_URL: http://ocr-service:8000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    volumes:
+      - backend_uploads:/app/uploads/profiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ocr-service:
+        condition: service_started
+
+  backend-navigation:
+    build:
+      context: ../backend_navigation
+      dockerfile: Dockerfile
+    container_name: assistwalk-navigation
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: assistwalk-web
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: assistwalk-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+      - backend
+      - backend-navigation
+      - ocr-service
+
 volumes:
   postgres_data:
+  backend_uploads:

@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import api from '../api/axiosInstance';
+import api, { API_BASE } from '../api/axiosInstance';
 import { logout } from '../utils/auth';
 import { useSidebarState } from '../hooks/useSidebarState';
 
@@ -71,7 +71,6 @@ async function reverseGeocode(lat, lon) {
 }
 
 const PAGE_SIZE = 8;
-const API_BASE = 'http://localhost:8081';
 const AV_PALETTE = ['#2563eb','#7c3aed','#dc2626','#d97706','#16a34a','#0891b2'];
 
 function avColor(id) { return AV_PALETTE[Number(id ?? 0) % AV_PALETTE.length]; }
@@ -490,7 +489,7 @@ export default function HistoryPage() {
   const displayName = `${firstName} ${lastName}`.trim() || 'Companion';
   const initials    = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'C';
   const photoSrc    = profile?.photoUrl
-    ? (profile.photoUrl.startsWith('http') ? profile.photoUrl : `http://localhost:8081${profile.photoUrl}`)
+    ? (profile.photoUrl.startsWith('http') ? profile.photoUrl : `${API_BASE}${profile.photoUrl}`)
     : null;
   const [imgErr, setImgErr] = useState(false);
   const hasPhoto = photoSrc && !imgErr;

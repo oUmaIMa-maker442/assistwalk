@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
-import api from '../../api/axiosInstance';
+import api, { API_BASE } from '../../api/axiosInstance';
 import { logout } from '../../utils/auth';
 import Sidebar from '../../components/Sidebar';
 import { useSidebarState } from '../../hooks/useSidebarState';
@@ -50,7 +50,6 @@ function displayName(u) {
 function initials(u) {
   return displayName(u).split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
-const API_BASE = 'http://localhost:8081';
 function resolvePhoto(u) {
   const url = u?.photoUrl;
   if (!url) return null;

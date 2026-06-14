@@ -1,19 +1,26 @@
 class ServerConfig {
-  // IP du PC Spring Boot
-  static const String pcIp = '100.91.177.99';
-  // Flask
-  static const String pcIpf = '100.91.177.163';
+  // Hote unique du gateway Nginx (port 80) qui route vers tous les
+  // services (Spring Boot, Flask navigation, OCR FastAPI).
+  // Dev local : --dart-define=GATEWAY_HOST=192.168.1.50
+  // VPS/Cloud : --dart-define=GATEWAY_HOST=api.assistwalk.ma --dart-define=GATEWAY_SCHEME=https
+  static const String gatewayHost = String.fromEnvironment(
+    'GATEWAY_HOST',
+    defaultValue: '100.91.177.99',
+  );
 
-  // Backend Spring Boot
-  static const String springPort = '8081';
+  static const String scheme = String.fromEnvironment(
+    'GATEWAY_SCHEME',
+    defaultValue: 'http',
+  );
 
-  // Backend Flask navigation
-  static const String flaskPort = '5001';
+  static String get _origin => '$scheme://$gatewayHost';
 
-  static String get springBaseUrl => 'http://$pcIp:$springPort';
+  // Backend Spring Boot : /auth, /api/v1/*, /uploads/*, /ws
+  static String get springBaseUrl => _origin;
 
-  static String get flaskBaseUrl => 'http://$pcIpf:$flaskPort';
+  // Backend Flask navigation : appelle deja '$flaskBaseUrl/navigation/detect'
+  static String get flaskBaseUrl => _origin;
 
-  // 🔥 OCR
-  static String get ocrBaseUrl => "http://$pcIpf:8000";
+  // OCR FastAPI : appelle '$ocrBaseUrl/extract' -> gateway retire le prefixe /ocr
+  static String get ocrBaseUrl => '$_origin/ocr';
 }

@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import toast, { Toaster } from 'react-hot-toast';
-import api from '../api/axiosInstance';
+import api, { API_BASE } from '../api/axiosInstance';
 import { logout } from '../utils/auth';
 import { useSidebarState } from '../hooks/useSidebarState';
 
@@ -36,7 +36,6 @@ function fmtDateTime(d) {
 function roleLabel(r) {
   return r === 'COMPANION' ? 'Companion' : r === 'ADMIN' ? 'Administrator' : r === 'VISUAL_IMPAIRED' ? 'Visually Impaired' : r || '—';
 }
-const API_BASE = 'http://localhost:8081';
 function resolvePhoto(url) {
   if (!url) return null;
   return url.startsWith('http') ? url : API_BASE + url;

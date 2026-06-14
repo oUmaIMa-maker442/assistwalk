@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import api from '../../api/axiosInstance';
+import api, { API_BASE } from '../../api/axiosInstance';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { logout } from '../../utils/auth';
 import Sidebar from '../../components/Sidebar';
@@ -134,7 +134,7 @@ function Spinner({ size=24, light=false }) {
 function Avatar({ user, size=36 }) {
   const [imgErr, setImgErr] = useState(false);
   const src = user?.photoUrl
-    ? (user.photoUrl.startsWith('http') ? user.photoUrl : `http://localhost:8081${user.photoUrl}`)
+    ? (user.photoUrl.startsWith('http') ? user.photoUrl : `${API_BASE}${user.photoUrl}`)
     : null;
   const showPhoto = src && !imgErr;
   return (

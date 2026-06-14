@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
-import api from '../api/axiosInstance';
+import api, { API_BASE } from '../api/axiosInstance';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { logout } from '../utils/auth';
 import Sidebar from '../components/Sidebar';
@@ -84,7 +84,6 @@ async function reverseGeocode(lat, lon) {
 }
 
 // ─── Alert name helper ─────────────────────────────────────────
-const API_BASE = 'http://localhost:8081';
 function alertName(a) {
   const p = a?.userPrenom ?? ''; const n = a?.userNom ?? '';
   return (p + ' ' + n).trim() || '—';

@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import api from '../api/axiosInstance';
+import api, { API_BASE } from '../api/axiosInstance';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { logout } from '../utils/auth';
 import Sidebar from '../components/Sidebar';
@@ -142,7 +142,6 @@ function Spinner({ size=28, light=false }) {
   );
 }
 
-const API_BASE = 'http://localhost:8081';
 function resolvePhoto(url) {
   if (!url) return null;
   return url.startsWith('http') ? url : API_BASE + url;
