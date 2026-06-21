@@ -110,8 +110,8 @@ Visual impairment level ${user.niveauDeficience}.
       _userFuture = _profileService.getCurrentUser();
     });
   }
-
   Future<void> _showPhotoOptions() async {
+  print("Camera button clicked");
     await _speak("Choose how to update your profile photo");
 
     if (!mounted) return;

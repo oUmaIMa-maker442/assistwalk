@@ -5,7 +5,7 @@ class ServerConfig {
   // VPS/Cloud : --dart-define=GATEWAY_HOST=api.assistwalk.ma --dart-define=GATEWAY_SCHEME=https
   static const String gatewayHost = String.fromEnvironment(
     'GATEWAY_HOST',
-    defaultValue: '100.91.177.99',
+    defaultValue: '100.91.177.29',
   );
 
   static const String scheme = String.fromEnvironment(

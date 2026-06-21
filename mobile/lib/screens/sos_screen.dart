@@ -138,8 +138,7 @@ class _SosScreenState extends State<SosScreen> {
         'emergency',
       );
 
-      final alertId = response['id'] ?? '-';
-      final successMessage = 'SOS sent successfully. Alert ID: $alertId';
+      final successMessage = 'SOS sent successfully.';
 
       if (!mounted) return;
 

@@ -29,9 +29,14 @@ class ApiService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await _dio.post(
       AppConstants.loginEndpoint,
-      data: {'email': email, 'password': password},
+      data: {
+        'email': email,
+        'password': password,
+      },
     );
-    return response.data;
+
+    print('LOGIN RESPONSE = ${response.data}');
+    return Map<String, dynamic>.from(response.data);
   }
 
   // SOS

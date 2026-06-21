@@ -38,9 +38,11 @@ class AuthService {
       }
 
       return false;
-    } catch (e) {
-      return false;
-    }
+    } catch (e, stackTrace) {
+        print('LOGIN ERROR = $e');
+        print(stackTrace);
+        return false;
+      }
   }
 
   Future<void> logout() async {
